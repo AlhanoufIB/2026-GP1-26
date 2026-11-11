@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../services/auth_service.dart';
-import '../theme/app_colors.dart';
-import '../utils/validators.dart';
-import '../widgets/app_logo.dart';
-import '../widgets/bottom_switch_link.dart';
-import '../widgets/labeled_field.dart';
-import '../widgets/primary_button.dart';
+import '../../services/auth_service.dart';
+import '../../theme/app_colors.dart';
+import '../../utils/validators.dart';
+import 'widgets/app_logo.dart';
+import 'widgets/bottom_switch_link.dart';
+import 'widgets/labeled_field.dart';
+import 'widgets/primary_button.dart';
 import 'login_screen.dart';
 
-/// Screen 4 of the mockups.
+/// Screen 4 of the Figma.
 /// Flow: create the account  ->  go back to LOGIN (the user is NOT logged in).
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -93,17 +93,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
 
-                        // >>> YOUR LOGO GOES HERE (see
-                        // lib/constants/app_assets.dart)
-                        const AppLogo(size: 72),
-                        const SizedBox(height: 14),
+                        // "رجوع" on the right, logo on the left
+                        const AuthTopBar(),
+                        const SizedBox(height: 18),
 
                         const Text(
                           'إنشاء حساب جديد',
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 26,
                             fontWeight: FontWeight.w800,
                             color: AppColors.brownDark,
                           ),
@@ -113,11 +112,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           'حساب واحد يمكّنك من البحث عن عقار مناسب لنشاطك، وعرض عقاراتك للإيجار.',
                           style: TextStyle(
                             fontSize: 12.5,
-                            height: 1.6,
+                            height: 1.7,
                             color: AppColors.hint,
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 22),
 
                         LabeledField(
                           label: 'الاسم الكامل',
@@ -170,7 +169,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           loading: _loading,
                           onPressed: _signUp,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
                         Center(
                           child: BottomSwitchLink(
                             question: 'لديك حساب؟',
@@ -182,7 +181,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 18),
                       ],
                     ),
                   ),

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-import '../services/auth_service.dart';
-import '../theme/app_colors.dart';
-import '../utils/validators.dart';
-import '../widgets/app_logo.dart';
-import '../widgets/bottom_switch_link.dart';
-import '../widgets/labeled_field.dart';
-import '../widgets/primary_button.dart';
+import '../../services/auth_service.dart';
+import '../../theme/app_colors.dart';
+import '../../utils/validators.dart';
+import 'widgets/app_logo.dart';
+import 'widgets/bottom_switch_link.dart';
+import 'widgets/labeled_field.dart';
+import 'widgets/primary_button.dart';
 import 'otp_screen.dart';
 import 'signup_screen.dart';
 
-/// Screen 3 of the mockups.
+/// Screen 3 of the Figma.
 /// Flow: phone + password  ->  (if correct)  OTP screen  ->  home.
 class LoginScreen extends StatefulWidget {
   /// Pre-fills the phone field (used right after sign-up).
@@ -110,46 +110,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 10),
 
-                        // Gradient header card
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 22),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(26),
-                            gradient: const LinearGradient(
-                              begin: Alignment.topRight,
-                              end: Alignment.bottomLeft,
-                              colors: [
-                                AppColors.gradientStart,
-                                AppColors.gradientEnd,
-                              ],
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // >>> YOUR LOGO GOES HERE (see
-                              // lib/constants/app_assets.dart). The size is
-                              // the number below.
-                              const AppLogo(size: 76, showLabel: false),
-                              const SizedBox(height: 10),
-                              // DELETE this Text if your logo image already
-                              // contains the word مُلّاك.
-                              const Text(
-                                'مُلّاك',
-                                style: TextStyle(
-                                  fontSize: 38,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.brownDark,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 30),
+                        // "رجوع" on the right, logo on the left
+                        const AuthTopBar(),
+
+                        // Figma leaves a big gap here on the login page
+                        const SizedBox(height: 90),
 
                         const Text(
                           'أهلاً بعودتك',
@@ -163,12 +130,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         const Text(
                           'سجّل الدخول برقم الجوال وكلمة المرور، وسنرسل لك رمز تحقق لمرة واحدة.',
                           style: TextStyle(
-                            fontSize: 13,
-                            height: 1.6,
+                            fontSize: 12.5,
+                            height: 1.7,
                             color: AppColors.hint,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 26),
 
                         LabeledField(
                           label: 'رقم الجوال',
@@ -178,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           keyboardType: TextInputType.phone,
                           validator: validatePhone,
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 14),
                         LabeledField(
                           label: 'كلمة المرور',
                           hint: 'كلمة المرور',
@@ -196,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           loading: _loading,
                           onPressed: _login,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
                         Center(
                           child: BottomSwitchLink(
                             question: 'مستخدم جديد؟',
@@ -208,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 18),
                       ],
                     ),
                   ),

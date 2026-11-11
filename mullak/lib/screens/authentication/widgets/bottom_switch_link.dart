@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../../../theme/app_colors.dart';
 
 /// "مستخدم جديد؟ إنشاء حساب" style link line under the button.
 class BottomSwitchLink extends StatelessWidget {

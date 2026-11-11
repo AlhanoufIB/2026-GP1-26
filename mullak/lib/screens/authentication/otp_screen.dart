@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../services/auth_service.dart';
-import '../theme/app_colors.dart';
-import '../utils/validators.dart';
-import '../widgets/otp_input.dart';
-import '../widgets/primary_button.dart';
+import '../../services/auth_service.dart';
+import '../../theme/app_colors.dart';
+import '../../utils/validators.dart';
+import 'widgets/otp_input.dart';
+import 'widgets/primary_button.dart';
 import 'home_placeholder.dart';
 
 /// Screen 2 of the mockups: "التحقق من رقم الجوال".

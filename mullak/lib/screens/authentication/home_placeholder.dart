@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../services/auth_service.dart';
-import '../theme/app_colors.dart';
+import '../../services/auth_service.dart';
+import '../../theme/app_colors.dart';
 import 'welcome_screen.dart';
 
 /// Temporary screen shown after a successful login + OTP.

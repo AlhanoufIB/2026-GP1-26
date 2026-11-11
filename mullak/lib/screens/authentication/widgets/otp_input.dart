@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../theme/app_colors.dart';
+import '../../../theme/app_colors.dart';
 
 /// Six (or [length]) digit boxes backed by ONE hidden text field.
 /// This makes typing, deleting and pasting a code behave naturally.

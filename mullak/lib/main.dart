@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'screens/welcome_screen.dart';
+import 'screens/authentication/onboarding_screen.dart';
 import 'theme/app_colors.dart';
 
 void main() {
@@ -35,7 +35,7 @@ class MullakApp extends StatelessWidget {
       // Force right-to-left layout for the whole app
       builder: (context, child) =>
           Directionality(textDirection: TextDirection.rtl, child: child!),
-      home: const WelcomeScreen(),
+      home: const OnboardingScreen(),
     );
   }
 }
