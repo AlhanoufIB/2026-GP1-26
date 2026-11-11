@@ -11,6 +11,7 @@ import 'business_info_screen.dart';
 import '../property_management/my_properties_screen.dart';
 import '../authentication/account_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../map/map_screen.dart';
 
 
 /// "استكشاف العقارات" — lets a business owner browse available properties.
@@ -88,6 +89,12 @@ class _ExplorePropertiesScreenState extends State<ExplorePropertiesScreen> {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
                 builder: (_) => const AccountScreen(),
+              ),
+            );
+          } else if (tab == AppTab.map) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => const MapScreen(),
               ),
             );
           }

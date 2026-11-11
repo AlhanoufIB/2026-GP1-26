@@ -7,7 +7,7 @@ import '../../widgets/labeled_field.dart';
 import '../../widgets/primary_button.dart';
 import 'recommendations_screen.dart';
 
-/// TEMPORARY until real auth (sprint 5): the logged-in business owner's id.
+/// TEMPORARY until real auth: the logged-in business owner's id.
 const String kCurrentBusinessOwnerId = 'business_owner_1';
 
 /// "أخبرنا عن نشاطك التجاري" — collects requirements for recommendations.
@@ -35,7 +35,6 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
 
   @override
   void dispose() {
-    // controllers must be disposed, like closing a file in Java
     _typeController.dispose();
     _locationController.dispose();
     _budgetController.dispose();

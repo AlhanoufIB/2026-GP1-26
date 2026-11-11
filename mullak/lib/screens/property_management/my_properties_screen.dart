@@ -6,9 +6,9 @@ import '../../widgets/property_card.dart';
 import 'delete_property_dialog.dart';
 import 'property_form_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../map/map_screen.dart';
 import '../authentication/account_screen.dart';
 import '../property_discovery/explore_properties_screen.dart';
-
 
 class MyPropertiesScreen extends StatefulWidget {
   const MyPropertiesScreen({super.key});
@@ -58,9 +58,7 @@ class _MyPropertiesScreenState extends State<MyPropertiesScreen> {
   Future<void> _editProperty(property_myProperty property) async {
     final result = await Navigator.push<property_myProperty>(
       context,
-      MaterialPageRoute(
-        builder: (_) => PropertyFormScreen(property: property),
-      ),
+      MaterialPageRoute(builder: (_) => PropertyFormScreen(property: property)),
     );
     if (result == null) return;
     setState(() {
@@ -100,20 +98,27 @@ class _MyPropertiesScreenState extends State<MyPropertiesScreen> {
                   width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.success,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check,
-                          size: 16, color: AppColors.successText),
+                      const Icon(
+                        Icons.check,
+                        size: 16,
+                        color: AppColors.successText,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         _banner!,
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.successText),
+                          fontSize: 12,
+                          color: AppColors.successText,
+                        ),
                       ),
                     ],
                   ),
@@ -121,13 +126,14 @@ class _MyPropertiesScreenState extends State<MyPropertiesScreen> {
               Expanded(
                 child: _properties.isEmpty
                     ? const Center(
-                        child: Text('ما عندك عقارات بعد',
-                            style: TextStyle(color: AppColors.textMuted)),
+                        child: Text(
+                          'ما عندك عقارات بعد',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
                       )
                     : ListView.separated(
                         itemCount: _properties.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: 12),
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (_, i) {
                           final p = _properties[i];
                           return PropertyCard(
@@ -145,23 +151,25 @@ class _MyPropertiesScreenState extends State<MyPropertiesScreen> {
         ),
       ),
       bottomNavigationBar: AppBottomNav(
-  current: AppTab.myProperties,
-  onTabSelected: (tab) {
-    if (tab == AppTab.explore) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const ExplorePropertiesScreen(),
-        ),
-      );
-    } else if (tab == AppTab.account) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const AccountScreen(),
-        ),
-      );
-    }
-  },
-),
+        current: AppTab.myProperties,
+        onTabSelected: (tab) {
+          if (tab == AppTab.explore) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => const ExplorePropertiesScreen(),
+              ),
+            );
+          } else if (tab == AppTab.account) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const AccountScreen()),
+            );
+          } else if (tab == AppTab.map) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const MapScreen()),
+            );
+          }
+        },
+      ),
     );
   }
 }

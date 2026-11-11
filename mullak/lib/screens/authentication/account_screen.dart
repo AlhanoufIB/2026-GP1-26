@@ -9,8 +9,7 @@ import 'welcome_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../property_management/my_properties_screen.dart';
 import '../property_discovery/explore_properties_screen.dart';
-
-
+import '../map/map_screen.dart';
 /// "حسابي": the first page after login, for now.
 class AccountScreen extends StatelessWidget {
   /// The user's phone (+9665XXXXXXXX), shown under the name.
@@ -39,8 +38,9 @@ class AccountScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = AuthService.instance.currentUserName ?? 'مستخدم مُلّاك';
     final trimmed = name.trim();
-    final initial =
-        trimmed.isEmpty ? '؟' : String.fromCharCode(trimmed.runes.first);
+    final initial = trimmed.isEmpty
+        ? '؟'
+        : String.fromCharCode(trimmed.runes.first);
 
     return Scaffold(
       body: SafeArea(
@@ -167,7 +167,8 @@ class AccountScreen extends StatelessWidget {
                       label: 'تواصل معنا',
                       trailing: Icons.phone_outlined,
                       // TODO: open the real contact details when we have them.
-                      onTap: () => _snack(context, 'وسيلة التواصل ستتوفر قريباً'),
+                      onTap: () =>
+                          _snack(context, 'وسيلة التواصل ستتوفر قريباً'),
                     ),
                   ],
                 ),
@@ -192,30 +193,41 @@ class AccountScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     'تسجيل الخروج',
-                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
             ),
 
             AppBottomNav(
-  current: AppTab.account,
-  onTabSelected: (tab) {
-    if (tab == AppTab.explore) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const ExplorePropertiesScreen(),
-        ),
-      );
-    } else if (tab == AppTab.myProperties) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const MyPropertiesScreen(),
-        ),
-      );
-    }
-  },
-),
+              current: AppTab.account,
+              onTabSelected: (tab) {
+                if (tab == AppTab.map) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const MapScreen()),
+                  );
+                } else if (tab == AppTab.explore) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => const ExplorePropertiesScreen(),
+                    ),
+                  );
+                } else if (tab == AppTab.myProperties) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => const MyPropertiesScreen(),
+                    ),
+                  );
+                } else if (tab == AppTab.account) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const AccountScreen()),
+                  );
+                }
+              },
+            ),
           ],
         ),
       ),

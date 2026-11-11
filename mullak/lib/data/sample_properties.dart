@@ -1,6 +1,6 @@
 import '../models/property.dart';
 
-/// TEMPORARY sample data, used until Firebase is connected (sprint 5).
+/// TEMPORARY sample data, used until Firebase is connected .
 ///
 /// The first three properties are the ones from our Figma designs.
 /// The others were added so the filters and the compare page (up to 4)
@@ -23,7 +23,7 @@ const List<Property> sampleProperties = [
     status: PropertyStatus.available,
     latitude: 24.6936,
     longitude: 46.6853,
-    imageUrls: [_olayaImg],
+    imageUrls: [_olayaImg, _malqaImg, _hittinImg],
     description:
         'محل بواجهة زجاجية كبيرة ومدخل مباشر من الشارع الرئيسي، معروض من المالك مباشرة.',
     hasParking: true,
@@ -40,7 +40,7 @@ const List<Property> sampleProperties = [
     status: PropertyStatus.available,
     latitude: 24.8070,
     longitude: 46.6100,
-    imageUrls: [_malqaImg],
+    imageUrls: [_olayaImg, _malqaImg, _hittinImg],
     description: 'محل على زاوية بواجهتين، قريب من مجمع مكاتب.',
     hasParking: false,
   ),
@@ -56,7 +56,7 @@ const List<Property> sampleProperties = [
     status: PropertyStatus.available,
     latitude: 24.7650,
     longitude: 46.6050,
-    imageUrls: [_hittinImg],
+    imageUrls: [_olayaImg, _malqaImg, _hittinImg],
     description: 'وحدة تجارية على شارع رئيسي ضمن مجمع تجاري.',
     hasParking: true,
   ),
@@ -72,7 +72,7 @@ const List<Property> sampleProperties = [
     status: PropertyStatus.available,
     latitude: 24.8250,
     longitude: 46.6400,
-    imageUrls: [_olayaImg],
+    imageUrls: [_olayaImg, _malqaImg, _hittinImg],
     description: 'مكتب في الدور الأول مع غرفة اجتماعات.',
     hasParking: true,
   ),
@@ -88,7 +88,7 @@ const List<Property> sampleProperties = [
     status: PropertyStatus.available,
     latitude: 24.8550,
     longitude: 46.6700,
-    imageUrls: [_hittinImg],
+    imageUrls: [_olayaImg, _malqaImg, _hittinImg],
     // description and hasParking left empty on purpose,
     // to test how pages handle missing optional data.
   ),
@@ -104,6 +104,6 @@ const List<Property> sampleProperties = [
     status: PropertyStatus.rented, // must be hidden from Explore
     latitude: 24.8110,
     longitude: 46.7300,
-    imageUrls: [_malqaImg],
+    imageUrls: [_olayaImg, _malqaImg, _hittinImg],
   ),
 ];
