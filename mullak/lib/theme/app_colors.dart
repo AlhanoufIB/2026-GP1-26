@@ -10,4 +10,24 @@ class AppColors {
   static const gradientStart = Color(0xFFEBD9C3);
   static const gradientEnd = Color(0xFFC8A47E);
   static const error = Color(0xFFC0392B);
+
+   AppColors._();
+
+  static const Color primary = Color(0xFF624832);
+  static const Color textDark = Color(0xFF30261D);
+  static const Color textMuted = Color(0xFF7B7062);
+
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color beige = Color(0xFFEFE4D1);
+  static const Color beigeSoft = Color(0xFFEBE0CF);
+
+  static const Color gradientTop = Color(0xFFEADFC9);
+  static const Color gradientBottom = Color(0xFFC4A482);
+
+  static const Color border2 = Color(0xFFE5D9C6);
+  static const Color success = Color(0xFFE3EDE5);
+  static const Color successText = Color(0xFF2F6B45);
+  static const Color danger = Color(0xFFA8432F);
+  static const Color dangerSoft = Color(0xFFF6E1DC);
+
 }

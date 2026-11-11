@@ -7,6 +7,10 @@ import 'rate_experience_screen.dart';
 import 'report_problem_screen.dart';
 import 'welcome_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../property_management/my_properties_screen.dart';
+import '../property_discovery/explore_properties_screen.dart';
+
+
 /// "حسابي": the first page after login, for now.
 class AccountScreen extends StatelessWidget {
   /// The user's phone (+9665XXXXXXXX), shown under the name.
@@ -195,14 +199,23 @@ class AccountScreen extends StatelessWidget {
             ),
 
             AppBottomNav(
-              current: AppTab.account,
-              onTabSelected: (tab) {
-                if (tab != AppTab.account) {
-                  // TODO: open the page of each tab when they are ready.
-                  _snack(context, 'سيتم ربط هذه الصفحة لاحقاً');
-                }
-              },
-            ),
+  current: AppTab.account,
+  onTabSelected: (tab) {
+    if (tab == AppTab.explore) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const ExplorePropertiesScreen(),
+        ),
+      );
+    } else if (tab == AppTab.myProperties) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const MyPropertiesScreen(),
+        ),
+      );
+    }
+  },
+),
           ],
         ),
       ),

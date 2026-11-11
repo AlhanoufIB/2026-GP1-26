@@ -8,6 +8,7 @@ import 'widgets/property_image.dart';
 import 'widgets/property_gallery.dart';
 import '../../repositories/saved_properties_repository.dart';
 
+
 /// "تفاصيل العقار"
 /// Two versions from the design:
 ///  - opened from Explore          -> matchScore is null (no badge)
