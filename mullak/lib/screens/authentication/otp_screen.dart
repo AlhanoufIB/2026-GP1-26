@@ -8,7 +8,7 @@ import '../../theme/app_colors.dart';
 import '../../utils/validators.dart';
 import 'widgets/otp_input.dart';
 import 'widgets/primary_button.dart';
-import 'home_placeholder.dart';
+import 'account_screen.dart';
 
 /// Screen 2 of the mockups: "التحقق من رقم الجوال".
 /// Opened ONLY after a correct phone + password on the login screen.
@@ -85,7 +85,7 @@ class _OtpScreenState extends State<OtpScreen> {
       // Correct code: the user is logged in. Remove all login pages from the
       // back stack so "back" can't return to them.
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomePlaceholder()),
+         MaterialPageRoute(builder: (_) => AccountScreen(phone: widget.phone)),
         (_) => false,
       );
     } catch (_) {
