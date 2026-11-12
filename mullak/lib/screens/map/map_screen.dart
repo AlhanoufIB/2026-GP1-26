@@ -6,9 +6,14 @@ import '../../data/sample_properties.dart';
 import '../../models/property.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_bottom_nav.dart';
+
 import '../authentication/account_screen.dart';
 import '../property_discovery/explore_properties_screen.dart';
+import '../property_discovery/property_details_screen.dart';
+import '../property_discovery/utils/discovery_formatters.dart';
 import '../property_management/my_properties_screen.dart';
+import '../notifications/notifications_screen.dart';
+
 import 'widgets/map_filter_sheet.dart';
 
 class MapScreen extends StatefulWidget {
@@ -29,11 +34,13 @@ class _MapScreenState extends State<MapScreen> {
 
   Property? _selectedProperty;
 
-  // Temporary density colors for the Figma prototype.
+  // Temporary density colors.
   static const Color _highDensity =
       Color(0xFFD95B59);
+
   static const Color _mediumDensity =
       Color(0xFFF0A44A);
+
   static const Color _lowDensity =
       Color(0xFFF0D76C);
 
@@ -50,15 +57,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  String _typeName(String type) {
-    if (type == PropertyType.shop) return 'محل تجاري';
-    if (type == PropertyType.office) return 'مكتب';
-    if (type == PropertyType.kiosk) return 'كشك';
-    return 'عقار تجاري';
-  }
-
-  // Multiple transparent circles create a soft,
-  // illustrative density effect on the map.
+  // Illustrative density effect.
   List<CircleMarker> _densitySpot(
     LatLng center,
     Color color,
@@ -117,6 +116,7 @@ class _MapScreenState extends State<MapScreen> {
     ];
   }
 
+  // Open map filters.
   Future<void> _openFilters() async {
     final result =
         await showModalBottomSheet<MapFilterSelection>(
@@ -142,6 +142,16 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
+  // Open notifications screen.
+  void _openNotifications() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const NotificationsScreen(),
+      ),
+    );
+  }
+
+  // Select a property marker.
   void _selectProperty(Property property) {
     setState(() {
       _selectedProperty = property;
@@ -156,6 +166,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  // Reset map position.
   void _resetMap() {
     setState(() {
       _selectedProperty = null;
@@ -164,93 +175,234 @@ class _MapScreenState extends State<MapScreen> {
     _mapController.move(_riyadhCenter, 11);
   }
 
+  // Open the existing full property details screen.
+  void _openFullPropertyDetails(Property property) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PropertyDetailsScreen(
+          property: property,
+        ),
+      ),
+    );
+  }
+
+  // Property preview bottom sheet.
   void _showPropertyDetails(Property property) {
+    final parking = property.hasParking == null
+        ? 'غير محدد'
+        : property.hasParking!
+            ? 'متوفرة'
+            : 'غير متوفرة';
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) {
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(26),
+        ),
+      ),
+      builder: (sheetContext) {
         return SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              20, 0, 20, 30,
-            ),
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (property.imageUrls.isNotEmpty)
-                  ClipRRect(
-                    borderRadius:
-                        BorderRadius.circular(14),
-                    child: Image.asset(
-                      property.imageUrls.first,
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          const SizedBox(
-                        height: 100,
-                        child: Center(
-                          child: Icon(
-                            Icons.storefront_outlined,
-                            size: 55,
+          top: false,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                20, 0, 20, 24,
+              ),
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Property image.
+                  if (property.imageUrls.isNotEmpty)
+                    ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(14),
+                      child: Image.asset(
+                        property.imageUrls.first,
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            const SizedBox(
+                          height: 120,
+                          child: Center(
+                            child: Icon(
+                              Icons.storefront_outlined,
+                              size: 55,
+                              color: AppColors.brown,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                const SizedBox(height: 16),
-
-                Text(
-                  property.title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.brownDark,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                Text(
-                  '${property.district}، ${property.city}',
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  'نوع العقار: ${_typeName(property.propertyType)}',
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  'المساحة: ${property.areaSqm} م²',
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  'الإيجار السنوي: ${_formatPrice(property.rentPrice)} ر.س',
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  property.hasParking == true
-                      ? 'تتوفر مواقف'
-                      : 'المواقف غير مؤكدة',
-                ),
-
-                if (property.description != null &&
-                    property.description!.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Text(property.description!),
+
+                  // Property title.
+                  Text(
+                    property.title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.brownDark,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  // City, district and property ID.
+                  Text(
+                    '${property.city} · '
+                    '${property.district} · '
+                    'رقم العقار ${property.propertyId}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.hint,
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Annual rent.
+                  Text(
+                    formatYearlyRent(property.rentPrice),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.brown,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Area, type and parking boxes.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _infoBox(
+                          value: formatArea(
+                            property.areaSqm,
+                          ),
+                          label: 'المساحة',
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      Expanded(
+                        child: _infoBox(
+                          value: property.typeLabel,
+                          label: 'النوع',
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      Expanded(
+                        child: _infoBox(
+                          value: parking,
+                          label: 'المواقف',
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Property description.
+                  Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(
+                      minHeight: 110,
+                    ),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.border,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'وصف العقار',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.brownDark,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Text(
+                          property.description ??
+                              'لا يوجد وصف',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.7,
+                            color: AppColors.brownDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Open full property details.
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+
+                        _openFullPropertyDetails(
+                          property,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.brown,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'عرض تفاصيل العقار',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(
+                            Icons.chevron_left,
+                            size: 21,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -258,6 +410,53 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  // Small information box.
+  Widget _infoBox({
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: AppColors.brownDark,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.hint,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Density legend.
   Widget _densityLegend() {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -300,7 +499,9 @@ class _MapScreenState extends State<MapScreen> {
             color: AppColors.brownDark,
           ),
         ),
+
         const SizedBox(width: 7),
+
         Container(
           width: 10,
           height: 10,
@@ -313,6 +514,54 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  // Notification button with dynamic unread indicator.
+  Widget _notificationButton() {
+    return ValueListenableBuilder<Set<int>>(
+      valueListenable: NotificationsScreen.unreadIds,
+      builder: (context, unread, _) {
+        return Material(
+          color: Colors.white,
+          elevation: 2,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: _openNotifications,
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Icon(
+                    Icons.notifications_none_rounded,
+                    color: AppColors.brown,
+                    size: 26,
+                  ),
+
+                  // Only visible when unread notifications exist.
+                  if (unread.isNotEmpty)
+                    Positioned(
+                      top: 8,
+                      left: 10,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFD94D3D),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Property marker.
   Widget _propertyMarker(Property property) {
     final selected =
         _selectedProperty?.propertyId ==
@@ -346,6 +595,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  // Small property card displayed on the map.
   Widget _propertyCard(Property property) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -382,7 +632,8 @@ class _MapScreenState extends State<MapScreen> {
                 const SizedBox(height: 6),
 
                 Text(
-                  '${property.areaSqm} م²  •  ${property.district}',
+                  '${property.areaSqm} م²  •  '
+                  '${property.district}',
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.hint,
@@ -392,7 +643,8 @@ class _MapScreenState extends State<MapScreen> {
                 const SizedBox(height: 8),
 
                 Text(
-                  '${_formatPrice(property.rentPrice)} ر.س / سنويًا',
+                  '${_formatPrice(property.rentPrice)}'
+                  ' ر.س / سنويًا',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -402,17 +654,42 @@ class _MapScreenState extends State<MapScreen> {
 
                 const SizedBox(height: 7),
 
+                // Details link with underline and arrow.
                 InkWell(
                   onTap: () =>
                       _showPropertyDetails(property),
-                  child: const Text(
-                    'التفاصيل',
-                    style: TextStyle(
-                      fontSize: 12,
-                      decoration:
-                          TextDecoration.underline,
-                      color: AppColors.brown,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.only(
+                          bottom: 2,
+                        ),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: AppColors.brown,
+                              width: 0.8,
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'التفاصيل',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.brown,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 3),
+
+                      const Icon(
+                        Icons.chevron_left,
+                        size: 15,
+                        color: AppColors.brown,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -490,11 +767,12 @@ class _MapScreenState extends State<MapScreen> {
                       'sa.edu.ksu.mullak',
                 ),
 
-                // Illustrative density overlay.
+                // Density overlay.
                 CircleLayer(
                   circles: _demoDensityCircles,
                 ),
 
+                // Property markers.
                 MarkerLayer(
                   markers: properties.map((property) {
                     return Marker(
@@ -519,9 +797,16 @@ class _MapScreenState extends State<MapScreen> {
               ],
             ),
 
-            // Top-left density legend.
+            // Top-left notifications icon.
             Positioned(
               top: 16,
+              left: 12,
+              child: _notificationButton(),
+            ),
+
+            // Density legend below notifications.
+            Positioned(
+              top: 80,
               left: 12,
               child: _densityLegend(),
             ),
@@ -552,7 +837,7 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
 
-            // Recenter the map.
+            // Recenter map button.
             Positioned(
               right: 16,
               top: 80,
@@ -571,7 +856,7 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
 
-            // Property details card.
+            // Selected property card.
             if (_selectedProperty != null)
               Positioned(
                 left: 12,
@@ -608,19 +893,22 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ),
 
+      // Bottom navigation bar.
       bottomNavigationBar: AppBottomNav(
         current: AppTab.map,
         onTabSelected: (tab) {
           if (tab == AppTab.explore) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (_) => const ExplorePropertiesScreen(),
+                builder: (_) =>
+                    const ExplorePropertiesScreen(),
               ),
             );
           } else if (tab == AppTab.myProperties) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (_) => const MyPropertiesScreen(),
+                builder: (_) =>
+                    const MyPropertiesScreen(),
               ),
             );
           } else if (tab == AppTab.account) {
