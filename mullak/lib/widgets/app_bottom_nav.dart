@@ -76,23 +76,23 @@ class AppBottomNav extends StatelessWidget {
   }
 
   // Handle navigation between screens
-  void _navigate(
-    BuildContext context,
-    AppTab selectedTab,
-  ) {
-    // Stay on the same screen if already selected
-    if (selectedTab == current) return;
+void _navigate(BuildContext context, AppTab selectedTab) {
+  // Get the selected tab's main screen.
+  final screen = _getScreen(selectedTab);
 
-    // Get destination screen
-    final screen = _getScreen(selectedTab);
+  // Ignore tabs that are not implemented yet.
+  if (screen == null) return;
 
-    // Navigate to the selected screen
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => screen,
-      ),
-    );
-  }
+  // Always open a fresh instance of the selected screen,
+  // even when the user selects the current tab.
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(
+      builder: (_) => screen,
+    ),
+    (route) => false,
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
