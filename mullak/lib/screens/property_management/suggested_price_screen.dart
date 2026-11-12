@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/property_myProperty.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/app_bottom_nav.dart';
 
 class PriceChoice {
   /// null = المستخدم اختار يدخل السعر بنفسه
@@ -97,6 +98,9 @@ class SuggestedPriceScreen extends StatelessWidget {
           ),
         ),
       ),
+      bottomNavigationBar: const AppBottomNav(
+  current: AppTab.myProperties,
+),
     );
   }
 }

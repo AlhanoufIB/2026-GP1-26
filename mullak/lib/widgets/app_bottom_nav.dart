@@ -2,45 +2,108 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// The main sections of the app (the bottom bar).
-enum AppTab { map, explore, myProperties, chats, account }
+// Screens
+import '../screens/map/map_screen.dart';
+import '../screens/authentication/account_screen.dart';
+import '../screens/property_discovery/explore_properties_screen.dart';
+import '../screens/property_management/my_properties_screen.dart';
+import '../screens/chat/chats_screen.dart';
 
-/// Bottom navigation bar shared by all the main pages.
-///
-/// How to use it on a page:
-///
-///   AppBottomNav(
-///     current: AppTab.explore,            // the tab this page belongs to
-///     onTabSelected: (tab) { ... },       // open the page of that tab
-///   )
-///
-/// Put it at the bottom of the page, for example as
-/// `bottomNavigationBar:` of the Scaffold.
+// Navigation tabs
+enum AppTab {
+  map,
+  explore,
+  myProperties,
+  chats,
+  account,
+}
+
 class AppBottomNav extends StatelessWidget {
   final AppTab current;
-  final ValueChanged<AppTab> onTabSelected;
 
   const AppBottomNav({
     super.key,
     required this.current,
-    required this.onTabSelected,
   });
 
-  // The app is right-to-left, so the FIRST item is on the right.
+  // Navigation bar items
   static const _items = <_NavItem>[
-    _NavItem(AppTab.map, Icons.location_on_outlined, 'الخريطة'),
-    _NavItem(AppTab.explore, Icons.search, 'استكشاف'),
-    _NavItem(AppTab.myProperties, Icons.home_outlined, 'عقاراتي'),
-    _NavItem(AppTab.chats, Icons.chat_bubble_outline, 'المحادثات'),
-    _NavItem(AppTab.account, Icons.person_outline, 'حسابي'),
+    _NavItem(
+      AppTab.map,
+      Icons.location_on_outlined,
+      'الخريطة',
+    ),
+    _NavItem(
+      AppTab.explore,
+      Icons.search,
+      'استكشاف',
+    ),
+    _NavItem(
+      AppTab.myProperties,
+      Icons.home_outlined,
+      'عقاراتي',
+    ),
+    _NavItem(
+      AppTab.chats,
+      Icons.chat_bubble_outline,
+      'المحادثات',
+    ),
+    _NavItem(
+      AppTab.account,
+      Icons.person_outline,
+      'حسابي',
+    ),
   ];
+
+  // Get the screen associated with the selected tab
+  Widget _getScreen(AppTab tab) {
+    switch (tab) {
+      case AppTab.map:
+        return const MapScreen();
+
+      case AppTab.explore:
+        return const ExplorePropertiesScreen();
+
+      case AppTab.myProperties:
+        return const MyPropertiesScreen();
+
+      case AppTab.chats:
+        return const ChatsScreen();
+
+      case AppTab.account:
+        return const AccountScreen();
+    }
+  }
+
+  // Handle navigation between screens
+  void _navigate(
+    BuildContext context,
+    AppTab selectedTab,
+  ) {
+    // Stay on the same screen if already selected
+    if (selectedTab == current) return;
+
+    // Get destination screen
+    final screen = _getScreen(selectedTab);
+
+    // Navigate to the selected screen
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => screen,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border)),
+        border: Border(
+          top: BorderSide(
+            color: AppColors.border,
+          ),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -53,7 +116,10 @@ class AppBottomNav extends StatelessWidget {
                   child: _NavButton(
                     item: item,
                     selected: item.tab == current,
-                    onTap: () => onTabSelected(item.tab),
+                    onTap: () => _navigate(
+                      context,
+                      item.tab,
+                    ),
                   ),
                 ),
             ],
@@ -64,14 +130,20 @@ class AppBottomNav extends StatelessWidget {
   }
 }
 
+// Navigation item model
 class _NavItem {
   final AppTab tab;
   final IconData icon;
   final String label;
 
-  const _NavItem(this.tab, this.icon, this.label);
+  const _NavItem(
+    this.tab,
+    this.icon,
+    this.label,
+  );
 }
 
+// Navigation button widget
 class _NavButton extends StatelessWidget {
   final _NavItem item;
   final bool selected;
@@ -87,23 +159,33 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.brownDark : _inactive;
+    final color = selected
+        ? AppColors.brownDark
+        : _inactive;
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(
+          vertical: 4,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(item.icon, size: 22, color: color),
+            Icon(
+              item.icon,
+              size: 22,
+              color: color,
+            ),
             const SizedBox(height: 3),
             Text(
               item.label,
               style: TextStyle(
                 fontSize: 10.5,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                fontWeight: selected
+                    ? FontWeight.w800
+                    : FontWeight.w500,
                 color: color,
               ),
             ),

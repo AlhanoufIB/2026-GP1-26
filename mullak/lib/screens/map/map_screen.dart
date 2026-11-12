@@ -7,11 +7,10 @@ import '../../models/property.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_bottom_nav.dart';
 
-import '../authentication/account_screen.dart';
-import '../property_discovery/explore_properties_screen.dart';
+
+
 import '../property_discovery/property_details_screen.dart';
 import '../property_discovery/utils/discovery_formatters.dart';
-import '../property_management/my_properties_screen.dart';
 import '../notifications/notifications_screen.dart';
 
 import 'widgets/map_filter_sheet.dart';
@@ -893,33 +892,9 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ),
 
-      // Bottom navigation bar.
-      bottomNavigationBar: AppBottomNav(
-        current: AppTab.map,
-        onTabSelected: (tab) {
-          if (tab == AppTab.explore) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) =>
-                    const ExplorePropertiesScreen(),
-              ),
-            );
-          } else if (tab == AppTab.myProperties) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) =>
-                    const MyPropertiesScreen(),
-              ),
-            );
-          } else if (tab == AppTab.account) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => const AccountScreen(),
-              ),
-            );
-          }
-        },
-      ),
+      bottomNavigationBar: const AppBottomNav(
+  current: AppTab.map,
+),
     );
   }
 }

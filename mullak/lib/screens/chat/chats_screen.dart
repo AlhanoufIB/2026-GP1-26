@@ -5,11 +5,6 @@ import '../../repositories/chat_repository.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_bottom_nav.dart';
 
-import '../map/map_screen.dart';
-import '../property_discovery/explore_properties_screen.dart';
-import '../property_management/my_properties_screen.dart';
-import '../authentication/account_screen.dart';
-
 import 'chat_details_screen.dart';
 
 class ChatsScreen extends StatelessWidget {
@@ -218,44 +213,9 @@ class ChatsScreen extends StatelessWidget {
           ),
         ),
 
-        bottomNavigationBar: AppBottomNav(
+        // Shared bottom navigation bar.
+        bottomNavigationBar: const AppBottomNav(
           current: AppTab.chats,
-          onTabSelected: (tab) {
-            if (tab == AppTab.chats) return;
-
-            Widget? destination;
-
-            switch (tab) {
-              case AppTab.map:
-                destination = const MapScreen();
-                break;
-
-              case AppTab.explore:
-                destination = const ExplorePropertiesScreen();
-                break;
-
-              case AppTab.myProperties:
-                destination = const MyPropertiesScreen();
-                break;
-
-              case AppTab.account:
-                destination = const AccountScreen();
-                break;
-
-              case AppTab.chats:
-                break;
-            }
-
-            if (destination != null) {
-              final page = destination;
-
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (_) => page,
-                ),
-              );
-            }
-          },
         ),
       ),
     );

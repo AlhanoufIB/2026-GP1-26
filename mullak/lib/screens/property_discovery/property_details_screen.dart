@@ -4,10 +4,10 @@ import '../../models/property.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/primary_button.dart';
 import 'utils/discovery_formatters.dart';
-import 'widgets/property_image.dart';
 import 'widgets/property_gallery.dart';
 import '../../repositories/saved_properties_repository.dart';
-
+import '../../repositories/chat_repository.dart';
+import '../chat/chat_details_screen.dart';
 
 /// "تفاصيل العقار"
 /// Two versions from the design:
@@ -23,11 +23,22 @@ class PropertyDetailsScreen extends StatelessWidget {
     this.matchScore,
   });
 
-  // TODO(step 4): real save. TODO: chat belongs to the chat teammate.
-  void _comingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('ستتوفر هذه الميزة قريباً')));
+  /// Open an existing conversation or create a new one.
+  void _openOwnerChat(BuildContext context) {
+    final repository = ChatRepository.instance;
+
+    final conversation =
+        repository.getOrCreateConversation(property);
+
+    repository.markAsRead(conversation);
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatDetailsScreen(
+          conversation: conversation,
+        ),
+      ),
+    );
   }
 
   @override
@@ -67,7 +78,9 @@ class PropertyDetailsScreen extends StatelessWidget {
       width: double.infinity,
       child: Stack(
         children: [
-          Positioned.fill(child: PropertyGallery(images: property.imageUrls)),
+          Positioned.fill(
+            child: PropertyGallery(images: property.imageUrls),
+          ),
           Positioned(
             top: 48,
             right: 20,
@@ -82,7 +95,12 @@ class PropertyDetailsScreen extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
-                      shadows: [Shadow(blurRadius: 6, color: Colors.black45)],
+                      shadows: [
+                        Shadow(
+                          blurRadius: 6,
+                          color: Colors.black45,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -110,7 +128,10 @@ class PropertyDetailsScreen extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           '${property.city} · ${property.district} · رقم العقار ${property.propertyId}',
-          style: const TextStyle(fontSize: 14, color: AppColors.hint),
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.hint,
+          ),
         ),
       ],
     );
@@ -132,7 +153,10 @@ class PropertyDetailsScreen extends StatelessWidget {
         ),
         if (matchScore != null)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 8,
+            ),
             decoration: BoxDecoration(
               color: const Color(0xFFDCEFE3),
               borderRadius: BorderRadius.circular(20),
@@ -166,11 +190,17 @@ class PropertyDetailsScreen extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _InfoBox(value: property.typeLabel, label: 'النوع'),
+          child: _InfoBox(
+            value: property.typeLabel,
+            label: 'النوع',
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _InfoBox(value: parking, label: 'المواقف'),
+          child: _InfoBox(
+            value: parking,
+            label: 'المواقف',
+          ),
         ),
       ],
     );
@@ -217,7 +247,9 @@ class PropertyDetailsScreen extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.background,
-        border: Border(top: BorderSide(color: AppColors.border)),
+        border: Border(
+          top: BorderSide(color: AppColors.border),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -230,16 +262,22 @@ class PropertyDetailsScreen extends StatelessWidget {
                 child: ListenableBuilder(
                   listenable: SavedPropertiesRepository.instance,
                   builder: (context, _) {
-                    final saved = SavedPropertiesRepository.instance.isSaved(
+                    final saved =
+                        SavedPropertiesRepository.instance.isSaved(
                       property.propertyId,
                     );
+
                     return SizedBox(
                       height: 54,
                       child: OutlinedButton.icon(
-                        onPressed: () => SavedPropertiesRepository.instance
-                            .toggle(property.propertyId),
+                        onPressed: () =>
+                            SavedPropertiesRepository.instance.toggle(
+                          property.propertyId,
+                        ),
                         icon: Icon(
-                          saved ? Icons.bookmark : Icons.bookmark_border,
+                          saved
+                              ? Icons.bookmark
+                              : Icons.bookmark_border,
                           color: AppColors.brownDark,
                         ),
                         label: Text(
@@ -270,7 +308,7 @@ class PropertyDetailsScreen extends StatelessWidget {
                 flex: 3,
                 child: PrimaryButton(
                   text: 'محادثة المالك',
-                  onPressed: () => _comingSoon(context),
+                  onPressed: () => _openOwnerChat(context),
                 ),
               ),
             ],
@@ -286,12 +324,18 @@ class _InfoBox extends StatelessWidget {
   final String value;
   final String label;
 
-  const _InfoBox({required this.value, required this.label});
+  const _InfoBox({
+    required this.value,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 14,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -313,7 +357,10 @@ class _InfoBox extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppColors.hint),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.hint,
+            ),
           ),
         ],
       ),

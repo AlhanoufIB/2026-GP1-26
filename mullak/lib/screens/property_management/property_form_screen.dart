@@ -8,6 +8,7 @@ import 'suggested_price_screen.dart';
 import 'package:latlong2/latlong.dart';
 import '../../widgets/image_picker_section.dart';
 import 'location_picker_screen.dart';
+import '../../widgets/app_bottom_nav.dart';
 
 class PropertyFormScreen extends StatefulWidget {
   /// null = إضافة عقار جديد، غير null = تعديل
@@ -325,6 +326,9 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNav(
+  current: AppTab.myProperties,
+),
     );
   }
 }

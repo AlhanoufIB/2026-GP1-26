@@ -6,9 +6,7 @@ import '../../widgets/property_card.dart';
 import 'delete_property_dialog.dart';
 import 'property_form_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../map/map_screen.dart';
-import '../authentication/account_screen.dart';
-import '../property_discovery/explore_properties_screen.dart';
+
 
 class MyPropertiesScreen extends StatefulWidget {
   const MyPropertiesScreen({super.key});
@@ -150,26 +148,9 @@ class _MyPropertiesScreenState extends State<MyPropertiesScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: AppBottomNav(
-        current: AppTab.myProperties,
-        onTabSelected: (tab) {
-          if (tab == AppTab.explore) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => const ExplorePropertiesScreen(),
-              ),
-            );
-          } else if (tab == AppTab.account) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const AccountScreen()),
-            );
-          } else if (tab == AppTab.map) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const MapScreen()),
-            );
-          }
-        },
-      ),
+      bottomNavigationBar: const AppBottomNav(
+  current: AppTab.myProperties,
+),
     );
   }
 }
