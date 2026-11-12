@@ -8,10 +8,7 @@ import 'widgets/discovery_property_card.dart';
 import 'property_details_screen.dart';
 import 'saved_properties_screen.dart';
 import 'business_info_screen.dart';
-import '../property_management/my_properties_screen.dart';
-import '../authentication/account_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../map/map_screen.dart';
 
 
 /// "استكشاف العقارات" — lets a business owner browse available properties.
@@ -76,30 +73,9 @@ class _ExplorePropertiesScreenState extends State<ExplorePropertiesScreen> {
       ),
 
       // Bottom Navigation Bar
-      bottomNavigationBar: AppBottomNav(
-        current: AppTab.explore,
-        onTabSelected: (tab) {
-          if (tab == AppTab.myProperties) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => const MyPropertiesScreen(),
-              ),
-            );
-          } else if (tab == AppTab.account) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => const AccountScreen(),
-              ),
-            );
-          } else if (tab == AppTab.map) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => const MapScreen(),
-              ),
-            );
-          }
-        },
-      ),
+      bottomNavigationBar: const AppBottomNav(
+  current: AppTab.explore,
+),
     );
   }
 
