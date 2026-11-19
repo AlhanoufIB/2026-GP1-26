@@ -1,0 +1,115 @@
+# ============================================================
+# Mullak (مُلّاك) — Firebase SQL Connect schema
+# Translated from the Release-1 relational schema + data dictionary (4.4).
+# Every type with @table becomes a PostgreSQL table.
+# A field whose type is another table (e.g. owner: User!) becomes a
+# foreign key column automatically (ownerId → users.id).
+# Tables without an explicit id get an auto-generated UUID primary key.
+# ============================================================
+
+
+# ---------- 1. USER ----------
+# user_ID = the Firebase Authentication UID, so the database row and the
+# login account are the same person.
+# password_hash is NOT stored here: Firebase Authentication stores and
+# hashes credentials itself.
+type User @table(name: "users", key: "id") {
+  id: String! @default(expr: "auth.uid") @col(dataType: "varchar(255)")
+  fullName: String! @col(dataType: "varchar(100)")
+  phoneNumber: String! @unique @col(dataType: "varchar(15)")   # +966XXXXXXXXX
+  phoneVerified: Boolean! @default(value: false)
+  bOwnerFlag: Boolean! @default(value: false)   # acts as business owner
+  pOwnerFlag: Boolean! @default(value: false)   # acts as property owner
+}
+# BUSINESS_OWNER / PROPERTY_OWNER subtypes: represented by the two flags
+# above (mandatory, overlapping specialization). Foreign keys that the
+# relational schema points at BUSINESS_OWNER / PROPERTY_OWNER point at
+# User here, and the operations check the matching flag.
+
+
+# ---------- 9. PROPERTY ----------
+type Property @table(name: "properties") {
+  owner: User!                                   # property owner (FK)
+  title: String! @col(dataType: "varchar(150)")
+  district: String! @col(dataType: "varchar(100)")
+  city: String! @col(dataType: "varchar(100)")
+  propertyType: String! @col(dataType: "varchar(50)")   # shop | office | kiosk | warehouse
+  areaSqm: Float!
+  rentPrice: Float!
+  status: String! @default(value: "available") @col(dataType: "varchar(20)")  # available | rented | hidden
+  latitude: Float!
+  longitude: Float!
+  estimatedPrice: Float                          # filled later by the rent prediction model
+}
+
+
+# ---------- 10. IMAGE ----------
+type Image @table(name: "images") @unique(fields: ["property", "displayOrder"]) {
+  property: Property!
+  imageUrl: String! @col(dataType: "varchar(500)")   # Firebase Storage download URL
+  displayOrder: Int!             # >= 1, unique per property
+  uploadedAt: Timestamp! @default(expr: "request.time")
+}
+
+
+# ---------- 6. BUSINESS_REQUIREMENT ----------
+type BusinessRequirement @table(name: "business_requirements") {
+  businessOwner: User!
+  businessType: String! @col(dataType: "varchar(100)")   # cafe, pharmacy, salon...
+  budget: Float!
+  requiredSpace: Float!
+  preferredLocation: String @col(dataType: "varchar(150)")
+}
+
+
+# ---------- 7. RECOMMENDATION ----------
+type Recommendation @table(name: "recommendations") @unique(fields: ["requirement", "rank"]) {
+  requirement: BusinessRequirement!
+  property: Property!
+  locationScore: Float!          # 0-100
+  propertyMatchScore: Float!     # 0-100
+  explanation: String!
+  rank: Int!                     # 1 = best match, unique per requirement
+}
+
+
+# ---------- 5. CHAT ----------
+type Chat @table(name: "chats") {
+  businessOwner: User!
+  propertyOwner: User!
+}
+
+
+# ---------- 8. MESSAGE ----------
+type Message @table(name: "messages") {
+  chat: Chat!
+  sender: User!                  # user_ID in the relational schema
+  content: String!
+  isRead: Boolean! @default(value: false)
+  sentAt: Timestamp! @default(expr: "request.time")
+}
+
+
+# ---------- 2. REPORT ----------
+type Report @table(name: "reports") {
+  user: User!
+  description: String!
+  reportType: String! @col(dataType: "varchar(50)")   # fake listing | inappropriate behavior | other
+}
+
+
+# ---------- 4. REVIEW ----------
+type Review @table(name: "reviews") {
+  reviewer: User!
+  rating: Int!                   # 1-5 (validated in the app)
+  comment: String
+}
+
+
+# ---------- 3. NOTIFICATION ----------
+type Notification @table(name: "notifications") {
+  user: User!
+  property: Property             # optional
+  type: String! @col(dataType: "varchar(50)")      # new message | new match | price change
+  content: String! @col(dataType: "varchar(500)")
+}

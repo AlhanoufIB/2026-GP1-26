@@ -1,11 +1,12 @@
+import 'firebase_auth_service.dart';
+
 /// The ONE place the screens talk to for sign-up / login / OTP.
 ///
-/// Right now [AuthService.instance] is a [MockAuthService], so the whole flow
-/// works without any backend. When Firebase is ready we write a
-/// `FirebaseAuthService` that implements this same interface and change ONE
-/// line below. The screens won't need to change.
+/// [AuthService.instance] is now the real [FirebaseAuthService]
+/// (Firebase Auth + SQL Connect). To go back to the offline fake backend,
+/// change the line below to `MockAuthService()`. The screens don't change.
 abstract class AuthService {
-  static AuthService instance = MockAuthService();
+  static AuthService instance = FirebaseAuthService();
 
   /// True if an account with this phone already exists.
   Future<bool> phoneExists(String phone);
@@ -104,4 +105,12 @@ class MockAuthService implements AuthService {
     _loggedInPhone = null;
     _pendingPhone = null;
   }
+}
+
+/// Error with a message that can be shown to the user as-is (Arabic).
+class AuthException implements Exception {
+  final String message;
+  AuthException(this.message);
+  @override
+  String toString() => message;
 }

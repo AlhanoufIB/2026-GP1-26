@@ -1,4 +1,5 @@
 /// Small helpers that turn numbers into the text shown in the designs.
+library;
 
 /// 78000 -> "78,000"
 String formatNumber(double value) {

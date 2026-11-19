@@ -1,4 +1,5 @@
 /// Shared form validators + phone helpers.
+library;
 
 String? validatePhone(String? v) {
   final value = (v ?? '').replaceAll(' ', '');

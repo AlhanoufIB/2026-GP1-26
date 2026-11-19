@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'screens/authentication/onboarding_screen.dart';
 import 'theme/app_colors.dart';
 
-void main() {
+Future<void> main() async {
+  // Start Firebase before the app opens
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MullakApp());
 }
 

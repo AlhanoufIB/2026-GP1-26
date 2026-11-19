@@ -70,6 +70,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         (route) => route.isFirst, // keep the welcome page underneath
       );
+    } on AuthException catch (e) {
+      _snack(e.message);
     } catch (_) {
       _snack('حدث خطأ، حاول مرة أخرى');
     } finally {

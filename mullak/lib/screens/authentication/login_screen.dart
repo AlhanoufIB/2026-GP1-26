@@ -87,6 +87,8 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => OtpScreen(phone: phone)),
       );
+    } on AuthException catch (e) {
+      _snack(e.message);
     } catch (_) {
       _snack('حدث خطأ، حاول مرة أخرى');
     } finally {

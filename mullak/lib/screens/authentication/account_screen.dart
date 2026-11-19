@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../dataconnect_generated/generated.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/validators.dart';
+import 'contact_us_screen.dart';
 import 'rate_experience_screen.dart';
 import 'report_problem_screen.dart';
 import 'welcome_screen.dart';
@@ -14,15 +16,6 @@ class AccountScreen extends StatelessWidget {
   final String? phone;
 
   const AccountScreen({super.key, this.phone});
-
-  // TODO: replace with the real number of the user's properties.
-  static const _demoPropertiesCount = 2;
-
-  void _snack(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(msg)));
-  }
 
   void _logout(BuildContext context) {
     AuthService.instance.signOut();
@@ -115,30 +108,8 @@ class AccountScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 18),
 
-                    // Number of properties
-                    const _Card(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$_demoPropertiesCount',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.brownDark,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'عقاراتي',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.hint,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Number of properties (counted from the database)
+                    const _Card(child: _MyPropertiesCount()),
                     const SizedBox(height: 18),
 
                     _MenuRow(
@@ -164,9 +135,11 @@ class AccountScreen extends StatelessWidget {
                     _MenuRow(
                       label: 'تواصل معنا',
                       trailing: Icons.phone_outlined,
-                      // TODO: open the real contact details when we have them.
-                      onTap: () =>
-                          _snack(context, 'وسيلة التواصل ستتوفر قريباً'),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ContactUsScreen(),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -273,6 +246,59 @@ class _MenuRow extends StatelessWidget {
           Icon(trailing, size: 20, color: AppColors.brownDark),
         ],
       ),
+    );
+  }
+}
+
+/// Shows how many properties the logged-in user owns, read from the
+/// PROPERTY table (ListMyProperties query: owner = the logged-in user).
+class _MyPropertiesCount extends StatefulWidget {
+  const _MyPropertiesCount();
+
+  @override
+  State<_MyPropertiesCount> createState() => _MyPropertiesCountState();
+}
+
+class _MyPropertiesCountState extends State<_MyPropertiesCount> {
+  late final Future<int> _count = _load();
+
+  Future<int> _load() async {
+    final result = await MullakConnector.instance.listMyProperties().execute();
+    return result.data.properties.length;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<int>(
+      future: _count,
+      builder: (context, snap) {
+        final String text;
+        if (snap.hasData) {
+          text = '${snap.data}';
+        } else if (snap.hasError) {
+          text = '–'; // could not load (e.g. no internet)
+        } else {
+          text = '…'; // loading
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              text,
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: AppColors.brownDark,
+              ),
+            ),
+            const SizedBox(height: 2),
+            const Text(
+              'عقاراتي',
+              style: TextStyle(fontSize: 12, color: AppColors.hint),
+            ),
+          ],
+        );
+      },
     );
   }
 }

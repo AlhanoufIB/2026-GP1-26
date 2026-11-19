@@ -1,0 +1,177 @@
+# ============================================================
+# Mullak — queries + mutations
+# @auth(level: USER) = only signed-in users can call it.
+# "auth.uid" = the UID of whoever is signed in.
+# ============================================================
+
+
+# ---------------- AUTH / ACCOUNT ----------------
+
+mutation UpsertUser(
+  $fullName: String!
+  $phoneNumber: String!
+  $bOwnerFlag: Boolean!
+  $pOwnerFlag: Boolean!
+) @auth(level: USER) {
+  user_upsert(data: {
+    id_expr: "auth.uid"
+    fullName: $fullName
+    phoneNumber: $phoneNumber
+    phoneVerified: false
+    bOwnerFlag: $bOwnerFlag
+    pOwnerFlag: $pOwnerFlag
+  })
+}
+
+query GetMyProfile @auth(level: USER) {
+  user(key: { id_expr: "auth.uid" }) {
+    id
+    fullName
+    phoneNumber
+    bOwnerFlag
+    pOwnerFlag
+  }
+}
+
+mutation UpdateMyName($fullName: String!) @auth(level: USER) {
+  user_update(key: { id_expr: "auth.uid" }, data: { fullName: $fullName })
+}
+
+mutation CreateReport($description: String!, $reportType: String!) @auth(level: USER) {
+  report_insert(data: {
+    userId_expr: "auth.uid"
+    description: $description
+    reportType: $reportType
+  })
+}
+
+mutation CreateReview($rating: Int!, $comment: String) @auth(level: USER) {
+  review_insert(data: {
+    reviewerId_expr: "auth.uid"
+    rating: $rating
+    comment: $comment
+  })
+}
+
+
+# ---------------- PROPERTIES ----------------
+
+mutation CreateProperty(
+  $title: String!
+  $district: String!
+  $city: String!
+  $propertyType: String!
+  $areaSqm: Float!
+  $rentPrice: Float!
+  $latitude: Float!
+  $longitude: Float!
+) @auth(level: USER) {
+  property_insert(data: {
+    ownerId_expr: "auth.uid"
+    title: $title
+    district: $district
+    city: $city
+    propertyType: $propertyType
+    areaSqm: $areaSqm
+    rentPrice: $rentPrice
+    latitude: $latitude
+    longitude: $longitude
+  })
+}
+
+mutation UpdateMyPropertyStatus($id: UUID!, $status: String!) @auth(level: USER) {
+  property_updateMany(
+    where: { id: { eq: $id }, ownerId: { eq_expr: "auth.uid" } }
+    data: { status: $status }
+  )
+}
+
+mutation AddPropertyImage($propertyId: UUID!, $imageUrl: String!, $displayOrder: Int!) @auth(level: USER) {
+  image_insert(data: {
+    propertyId: $propertyId
+    imageUrl: $imageUrl
+    displayOrder: $displayOrder
+  })
+}
+
+query ListAvailableProperties @auth(level: USER) {
+  properties(where: { status: { eq: "available" } }, orderBy: [{ rentPrice: ASC }]) {
+    id
+    title
+    district
+    city
+    propertyType
+    areaSqm
+    rentPrice
+    latitude
+    longitude
+    coverImage: images_on_property(orderBy: [{ displayOrder: ASC }], limit: 1) { imageUrl }
+  }
+}
+
+query ListMyProperties @auth(level: USER) {
+  properties(where: { ownerId: { eq_expr: "auth.uid" } }) {
+    id
+    title
+    status
+    rentPrice
+      myCoverImage: images_on_property(orderBy: [{ displayOrder: ASC }], limit: 1) { imageUrl }
+  }
+}
+
+query GetProperty($id: UUID!) @auth(level: USER) {
+  property(id: $id) {
+    id
+    title
+    district
+    city
+    propertyType
+    areaSqm
+    rentPrice
+    status
+    latitude
+    longitude
+    estimatedPrice
+    owner { id fullName }
+    images: images_on_property(orderBy: [{ displayOrder: ASC }]) { imageUrl displayOrder }
+  }
+}
+
+
+# ---------------- CHAT ----------------
+
+mutation StartChat($propertyOwnerId: String!) @auth(level: USER) {
+  chat_insert(data: {
+    businessOwnerId_expr: "auth.uid"
+    propertyOwnerId: $propertyOwnerId
+  })
+}
+
+query ListMyChats @auth(level: USER) {
+  chats(where: { _or: [
+    { businessOwnerId: { eq_expr: "auth.uid" } }
+    { propertyOwnerId: { eq_expr: "auth.uid" } }
+  ] }) {
+    id
+    businessOwner { id fullName }
+    propertyOwner { id fullName }
+  }
+}
+
+mutation SendMessage($chatId: UUID!, $content: String!) @auth(level: USER) {
+  message_insert(data: {
+    chatId: $chatId
+    senderId_expr: "auth.uid"
+    content: $content
+  })
+}
+
+query ListMessages($chatId: UUID!) @auth(level: USER) {
+  messages(where: { chatId: { eq: $chatId } }, orderBy: [{ sentAt: ASC }]) {
+    id
+    content
+    isRead
+    sentAt
+    sender { id fullName }
+  }
+}

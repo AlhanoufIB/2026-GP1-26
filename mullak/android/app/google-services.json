@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "81333772044",
+    "project_id": "mullak-gp26",
+    "storage_bucket": "mullak-gp26.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:81333772044:android:123af0d8935b6a3375b329",
+        "android_client_info": {
+          "package_name": "com.example.mullak"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTetpZAHdO7rVuZfjIZwKjQ7poNUH7WjA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
