@@ -112,4 +112,5 @@ type Notification @table(name: "notifications") {
   property: Property             # optional
   type: String! @col(dataType: "varchar(50)")      # new message | new match | price change
   content: String! @col(dataType: "varchar(500)")
+  isRead: Boolean! @default(value: false)          # yes = true, no = false
 }
