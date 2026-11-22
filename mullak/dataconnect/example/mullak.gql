@@ -67,6 +67,7 @@ mutation CreateProperty(
   $longitude: Float!
   $address: String
   $description: String
+  $hasParking: Boolean
 ) @auth(level: USER) {
   property_insert(data: {
     ownerId_expr: "auth.uid"
@@ -80,6 +81,7 @@ mutation CreateProperty(
     longitude: $longitude
     address: $address
     description: $description
+    hasParking: $hasParking
   })
 }
 
@@ -140,6 +142,7 @@ query GetProperty($id: UUID!) @auth(level: USER) {
     estimatedPrice
     address
     description
+    hasParking
     owner { id fullName }
     images: images_on_property(orderBy: [{ displayOrder: ASC }]) { imageUrl displayOrder }
   }

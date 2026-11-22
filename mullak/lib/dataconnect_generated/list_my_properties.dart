@@ -6,8 +6,8 @@ class ListMyPropertiesVariablesBuilder {
   ListMyPropertiesVariablesBuilder(this._dataConnect, );
   Deserializer<ListMyPropertiesData> dataDeserializer = (dynamic json)  => ListMyPropertiesData.fromJson(jsonDecode(json));
   
-  Future<QueryResult<ListMyPropertiesData, void>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
-    return ref().execute(fetchPolicy: fetchPolicy);
+  Future<QueryResult<ListMyPropertiesData, void>> execute() {
+    return ref().execute();
   }
 
   QueryRef<ListMyPropertiesData, void> ref() {

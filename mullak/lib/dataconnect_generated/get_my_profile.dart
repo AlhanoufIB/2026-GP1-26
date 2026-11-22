@@ -6,8 +6,8 @@ class GetMyProfileVariablesBuilder {
   GetMyProfileVariablesBuilder(this._dataConnect, );
   Deserializer<GetMyProfileData> dataDeserializer = (dynamic json)  => GetMyProfileData.fromJson(jsonDecode(json));
   
-  Future<QueryResult<GetMyProfileData, void>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
-    return ref().execute(fetchPolicy: fetchPolicy);
+  Future<QueryResult<GetMyProfileData, void>> execute() {
+    return ref().execute();
   }
 
   QueryRef<GetMyProfileData, void> ref() {

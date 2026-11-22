@@ -6,8 +6,8 @@ class ListMyChatsVariablesBuilder {
   ListMyChatsVariablesBuilder(this._dataConnect, );
   Deserializer<ListMyChatsData> dataDeserializer = (dynamic json)  => ListMyChatsData.fromJson(jsonDecode(json));
   
-  Future<QueryResult<ListMyChatsData, void>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
-    return ref().execute(fetchPolicy: fetchPolicy);
+  Future<QueryResult<ListMyChatsData, void>> execute() {
+    return ref().execute();
   }
 
   QueryRef<ListMyChatsData, void> ref() {

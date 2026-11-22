@@ -33,6 +33,20 @@ part 'send_message.dart';
 
 part 'list_messages.dart';
 
+part 'save_property.dart';
+
+part 'unsave_property.dart';
+
+part 'get_my_saved_property_ids.dart';
+
+part 'list_discovery_properties.dart';
+
+part 'list_properties_by_ids.dart';
+
+part 'create_business_requirement.dart';
+
+part 'create_recommendation.dart';
+
 
 
 
@@ -116,6 +130,41 @@ class MullakConnector {
     return ListMessagesVariablesBuilder(dataConnect, chatId: chatId,);
   }
   
+  
+  SavePropertyVariablesBuilder saveProperty ({required String propertyId, }) {
+    return SavePropertyVariablesBuilder(dataConnect, propertyId: propertyId,);
+  }
+  
+  
+  UnsavePropertyVariablesBuilder unsaveProperty ({required String propertyId, }) {
+    return UnsavePropertyVariablesBuilder(dataConnect, propertyId: propertyId,);
+  }
+  
+  
+  GetMySavedPropertyIdsVariablesBuilder getMySavedPropertyIds () {
+    return GetMySavedPropertyIdsVariablesBuilder(dataConnect, );
+  }
+  
+  
+  ListDiscoveryPropertiesVariablesBuilder listDiscoveryProperties () {
+    return ListDiscoveryPropertiesVariablesBuilder(dataConnect, );
+  }
+  
+  
+  ListPropertiesByIdsVariablesBuilder listPropertiesByIds ({required List<String> ids, }) {
+    return ListPropertiesByIdsVariablesBuilder(dataConnect, ids: ids,);
+  }
+  
+  
+  CreateBusinessRequirementVariablesBuilder createBusinessRequirement ({required String businessType, required double budget, required double requiredSpace, }) {
+    return CreateBusinessRequirementVariablesBuilder(dataConnect, businessType: businessType,budget: budget,requiredSpace: requiredSpace,);
+  }
+  
+  
+  CreateRecommendationVariablesBuilder createRecommendation ({required String requirementId, required String propertyId, required double locationScore, required double propertyMatchScore, required String explanation, required int rank, }) {
+    return CreateRecommendationVariablesBuilder(dataConnect, requirementId: requirementId,propertyId: propertyId,locationScore: locationScore,propertyMatchScore: propertyMatchScore,explanation: explanation,rank: rank,);
+  }
+  
 
   static ConnectorConfig connectorConfig = ConnectorConfig(
     'europe-west1',
@@ -126,16 +175,9 @@ class MullakConnector {
   MullakConnector({required this.dataConnect});
   static MullakConnector get instance {
     
-    CacheSettings cacheSettings = CacheSettings(
-      maxAge: Duration(milliseconds:0),
-      storage: CacheStorage.persistent,
-    );
-    
     return MullakConnector(
         dataConnect: FirebaseDataConnect.instanceFor(
             connectorConfig: connectorConfig,
-            
-            cacheSettings: cacheSettings,
             
             sdkType: CallerSDKType.generated));
   }
