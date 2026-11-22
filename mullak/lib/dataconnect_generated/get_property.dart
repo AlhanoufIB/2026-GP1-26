@@ -30,6 +30,8 @@ class GetPropertyProperty {
   final double latitude;
   final double longitude;
   final double? estimatedPrice;
+  final String? address;
+  final String? description;
   final GetPropertyPropertyOwner owner;
   final List<GetPropertyPropertyImages> images;
   GetPropertyProperty.fromJson(dynamic json):
@@ -45,6 +47,8 @@ class GetPropertyProperty {
   latitude = nativeFromJson<double>(json['latitude']),
   longitude = nativeFromJson<double>(json['longitude']),
   estimatedPrice = json['estimatedPrice'] == null ? null : nativeFromJson<double>(json['estimatedPrice']),
+  address = json['address'] == null ? null : nativeFromJson<String>(json['address']),
+  description = json['description'] == null ? null : nativeFromJson<String>(json['description']),
   owner = GetPropertyPropertyOwner.fromJson(json['owner']),
   images = (json['images'] as List<dynamic>)
         .map((e) => GetPropertyPropertyImages.fromJson(e))
@@ -70,12 +74,14 @@ class GetPropertyProperty {
     latitude == otherTyped.latitude && 
     longitude == otherTyped.longitude && 
     estimatedPrice == otherTyped.estimatedPrice && 
+    address == otherTyped.address && 
+    description == otherTyped.description && 
     owner == otherTyped.owner && 
     images == otherTyped.images;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, district.hashCode, city.hashCode, propertyType.hashCode, areaSqm.hashCode, rentPrice.hashCode, status.hashCode, latitude.hashCode, longitude.hashCode, estimatedPrice.hashCode, owner.hashCode, images.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, district.hashCode, city.hashCode, propertyType.hashCode, areaSqm.hashCode, rentPrice.hashCode, status.hashCode, latitude.hashCode, longitude.hashCode, estimatedPrice.hashCode, address.hashCode, description.hashCode, owner.hashCode, images.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -92,6 +98,12 @@ class GetPropertyProperty {
     json['longitude'] = nativeToJson<double>(longitude);
     if (estimatedPrice != null) {
       json['estimatedPrice'] = nativeToJson<double?>(estimatedPrice);
+    }
+    if (address != null) {
+      json['address'] = nativeToJson<String?>(address);
+    }
+    if (description != null) {
+      json['description'] = nativeToJson<String?>(description);
     }
     json['owner'] = owner.toJson();
     json['images'] = images.map((e) => e.toJson()).toList();
@@ -110,6 +122,8 @@ class GetPropertyProperty {
     required this.latitude,
     required this.longitude,
     this.estimatedPrice,
+    this.address,
+    this.description,
     required this.owner,
     required this.images,
   });

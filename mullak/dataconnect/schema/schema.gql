@@ -40,6 +40,8 @@ type Property @table(name: "properties") {
   latitude: Float!
   longitude: Float!
   estimatedPrice: Float                          # filled later by the rent prediction model
+  address: String @col(dataType: "varchar(255)") # street / building, e.g. "طريق الملك فهد، مبنى 12"
+  description: String                            # free text shown in "وصف العقار"
 }
 
 

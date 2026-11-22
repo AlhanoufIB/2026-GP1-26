@@ -22,6 +22,7 @@ class ListMyPropertiesProperties {
   final String title;
   final String status;
   final double rentPrice;
+  final String? address;
   final List<ListMyPropertiesPropertiesMyCoverImage> myCoverImage;
   ListMyPropertiesProperties.fromJson(dynamic json):
   
@@ -29,6 +30,7 @@ class ListMyPropertiesProperties {
   title = nativeFromJson<String>(json['title']),
   status = nativeFromJson<String>(json['status']),
   rentPrice = nativeFromJson<double>(json['rentPrice']),
+  address = json['address'] == null ? null : nativeFromJson<String>(json['address']),
   myCoverImage = (json['myCoverImage'] as List<dynamic>)
         .map((e) => ListMyPropertiesPropertiesMyCoverImage.fromJson(e))
         .toList();
@@ -46,11 +48,12 @@ class ListMyPropertiesProperties {
     title == otherTyped.title && 
     status == otherTyped.status && 
     rentPrice == otherTyped.rentPrice && 
+    address == otherTyped.address && 
     myCoverImage == otherTyped.myCoverImage;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, status.hashCode, rentPrice.hashCode, myCoverImage.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, status.hashCode, rentPrice.hashCode, address.hashCode, myCoverImage.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -59,6 +62,9 @@ class ListMyPropertiesProperties {
     json['title'] = nativeToJson<String>(title);
     json['status'] = nativeToJson<String>(status);
     json['rentPrice'] = nativeToJson<double>(rentPrice);
+    if (address != null) {
+      json['address'] = nativeToJson<String?>(address);
+    }
     json['myCoverImage'] = myCoverImage.map((e) => e.toJson()).toList();
     return json;
   }
@@ -68,6 +74,7 @@ class ListMyPropertiesProperties {
     required this.title,
     required this.status,
     required this.rentPrice,
+    this.address,
     required this.myCoverImage,
   });
 }

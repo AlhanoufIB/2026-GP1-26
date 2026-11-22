@@ -1,9 +1,9 @@
 /// Data model for one commercial property listing.
 ///
 /// The fields follow the PROPERTY entity in our data dictionary
-/// (report section 4.4.2). Two fields are NOT in the dictionary yet and are
-/// marked "PENDING TEAM DECISION": [description] and [hasParking]. They are
-/// optional so nothing breaks if the team renames or removes them.
+/// (report section 4.4.2). [address] and [description] were added to the
+/// PROPERTY table (both optional). [hasParking] is still NOT in the
+/// dictionary ("PENDING TEAM DECISION").
 class Property {
   // ---------- fields from the data dictionary ----------
   final String propertyId; // PK
@@ -18,13 +18,14 @@ class Property {
   final double latitude;
   final double longitude;
   final double? estimatedPrice; // filled later by the rent prediction model
+  final String? address; // street / building (optional)
+  final String? description; // shown in "وصف العقار" (optional)
 
   /// Image paths, already sorted by IMAGE.display_order.
   /// Today they are local asset paths; after Firebase they will be URLs.
   final List<String> imageUrls;
 
   // ---------- PENDING TEAM DECISION (not in the dictionary yet) ----------
-  final String? description; // shown in "وصف العقار"
   final bool? hasParking; // shown in "المواقف"
 
   const Property({
@@ -40,8 +41,9 @@ class Property {
     required this.latitude,
     required this.longitude,
     this.estimatedPrice,
-    this.imageUrls = const [],
+    this.address,
     this.description,
+    this.imageUrls = const [],
     this.hasParking,
   });
 

@@ -9,8 +9,18 @@ class CreatePropertyVariablesBuilder {
   double rentPrice;
   double latitude;
   double longitude;
+  Optional<String> _address = Optional.optional(nativeFromJson, nativeToJson);
+  Optional<String> _description = Optional.optional(nativeFromJson, nativeToJson);
 
-  final FirebaseDataConnect _dataConnect;
+  final FirebaseDataConnect _dataConnect;  CreatePropertyVariablesBuilder address(String? t) {
+   _address.value = t;
+   return this;
+  }
+  CreatePropertyVariablesBuilder description(String? t) {
+   _description.value = t;
+   return this;
+  }
+
   CreatePropertyVariablesBuilder(this._dataConnect, {required  this.title,required  this.district,required  this.city,required  this.propertyType,required  this.areaSqm,required  this.rentPrice,required  this.latitude,required  this.longitude,});
   Deserializer<CreatePropertyData> dataDeserializer = (dynamic json)  => CreatePropertyData.fromJson(jsonDecode(json));
   Serializer<CreatePropertyVariables> varsSerializer = (CreatePropertyVariables vars) => jsonEncode(vars.toJson());
@@ -19,7 +29,7 @@ class CreatePropertyVariablesBuilder {
   }
 
   MutationRef<CreatePropertyData, CreatePropertyVariables> ref() {
-    CreatePropertyVariables vars= CreatePropertyVariables(title: title,district: district,city: city,propertyType: propertyType,areaSqm: areaSqm,rentPrice: rentPrice,latitude: latitude,longitude: longitude,);
+    CreatePropertyVariables vars= CreatePropertyVariables(title: title,district: district,city: city,propertyType: propertyType,areaSqm: areaSqm,rentPrice: rentPrice,latitude: latitude,longitude: longitude,address: _address,description: _description,);
     return _dataConnect.mutation("CreateProperty", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -102,6 +112,8 @@ class CreatePropertyVariables {
   final double rentPrice;
   final double latitude;
   final double longitude;
+  late final Optional<String>address;
+  late final Optional<String>description;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   CreatePropertyVariables.fromJson(Map<String, dynamic> json):
   
@@ -112,7 +124,25 @@ class CreatePropertyVariables {
   areaSqm = nativeFromJson<double>(json['areaSqm']),
   rentPrice = nativeFromJson<double>(json['rentPrice']),
   latitude = nativeFromJson<double>(json['latitude']),
-  longitude = nativeFromJson<double>(json['longitude']);
+  longitude = nativeFromJson<double>(json['longitude']) {
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    address = Optional.optional(nativeFromJson, nativeToJson);
+    address.value = json['address'] == null ? null : nativeFromJson<String>(json['address']);
+  
+  
+    description = Optional.optional(nativeFromJson, nativeToJson);
+    description.value = json['description'] == null ? null : nativeFromJson<String>(json['description']);
+  
+  }
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -130,11 +160,13 @@ class CreatePropertyVariables {
     areaSqm == otherTyped.areaSqm && 
     rentPrice == otherTyped.rentPrice && 
     latitude == otherTyped.latitude && 
-    longitude == otherTyped.longitude;
+    longitude == otherTyped.longitude && 
+    address == otherTyped.address && 
+    description == otherTyped.description;
     
   }
   @override
-  int get hashCode => Object.hashAll([title.hashCode, district.hashCode, city.hashCode, propertyType.hashCode, areaSqm.hashCode, rentPrice.hashCode, latitude.hashCode, longitude.hashCode]);
+  int get hashCode => Object.hashAll([title.hashCode, district.hashCode, city.hashCode, propertyType.hashCode, areaSqm.hashCode, rentPrice.hashCode, latitude.hashCode, longitude.hashCode, address.hashCode, description.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -147,6 +179,12 @@ class CreatePropertyVariables {
     json['rentPrice'] = nativeToJson<double>(rentPrice);
     json['latitude'] = nativeToJson<double>(latitude);
     json['longitude'] = nativeToJson<double>(longitude);
+    if(address.state == OptionalState.set) {
+      json['address'] = address.toJson();
+    }
+    if(description.state == OptionalState.set) {
+      json['description'] = description.toJson();
+    }
     return json;
   }
 
@@ -159,6 +197,8 @@ class CreatePropertyVariables {
     required this.rentPrice,
     required this.latitude,
     required this.longitude,
+    required this.address,
+    required this.description,
   });
 }
 

@@ -65,6 +65,8 @@ mutation CreateProperty(
   $rentPrice: Float!
   $latitude: Float!
   $longitude: Float!
+  $address: String
+  $description: String
 ) @auth(level: USER) {
   property_insert(data: {
     ownerId_expr: "auth.uid"
@@ -76,6 +78,8 @@ mutation CreateProperty(
     rentPrice: $rentPrice
     latitude: $latitude
     longitude: $longitude
+    address: $address
+    description: $description
   })
 }
 
@@ -105,6 +109,7 @@ query ListAvailableProperties @auth(level: USER) {
     rentPrice
     latitude
     longitude
+    address
     coverImage: images_on_property(orderBy: [{ displayOrder: ASC }], limit: 1) { imageUrl }
   }
 }
@@ -115,6 +120,7 @@ query ListMyProperties @auth(level: USER) {
     title
     status
     rentPrice
+    address
       myCoverImage: images_on_property(orderBy: [{ displayOrder: ASC }], limit: 1) { imageUrl }
   }
 }
@@ -132,6 +138,8 @@ query GetProperty($id: UUID!) @auth(level: USER) {
     latitude
     longitude
     estimatedPrice
+    address
+    description
     owner { id fullName }
     images: images_on_property(orderBy: [{ displayOrder: ASC }]) { imageUrl displayOrder }
   }

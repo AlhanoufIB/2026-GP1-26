@@ -27,6 +27,7 @@ class ListAvailablePropertiesProperties {
   final double rentPrice;
   final double latitude;
   final double longitude;
+  final String? address;
   final List<ListAvailablePropertiesPropertiesCoverImage> coverImage;
   ListAvailablePropertiesProperties.fromJson(dynamic json):
   
@@ -39,6 +40,7 @@ class ListAvailablePropertiesProperties {
   rentPrice = nativeFromJson<double>(json['rentPrice']),
   latitude = nativeFromJson<double>(json['latitude']),
   longitude = nativeFromJson<double>(json['longitude']),
+  address = json['address'] == null ? null : nativeFromJson<String>(json['address']),
   coverImage = (json['coverImage'] as List<dynamic>)
         .map((e) => ListAvailablePropertiesPropertiesCoverImage.fromJson(e))
         .toList();
@@ -61,11 +63,12 @@ class ListAvailablePropertiesProperties {
     rentPrice == otherTyped.rentPrice && 
     latitude == otherTyped.latitude && 
     longitude == otherTyped.longitude && 
+    address == otherTyped.address && 
     coverImage == otherTyped.coverImage;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, district.hashCode, city.hashCode, propertyType.hashCode, areaSqm.hashCode, rentPrice.hashCode, latitude.hashCode, longitude.hashCode, coverImage.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, district.hashCode, city.hashCode, propertyType.hashCode, areaSqm.hashCode, rentPrice.hashCode, latitude.hashCode, longitude.hashCode, address.hashCode, coverImage.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -79,6 +82,9 @@ class ListAvailablePropertiesProperties {
     json['rentPrice'] = nativeToJson<double>(rentPrice);
     json['latitude'] = nativeToJson<double>(latitude);
     json['longitude'] = nativeToJson<double>(longitude);
+    if (address != null) {
+      json['address'] = nativeToJson<String?>(address);
+    }
     json['coverImage'] = coverImage.map((e) => e.toJson()).toList();
     return json;
   }
@@ -93,6 +99,7 @@ class ListAvailablePropertiesProperties {
     required this.rentPrice,
     required this.latitude,
     required this.longitude,
+    this.address,
     required this.coverImage,
   });
 }

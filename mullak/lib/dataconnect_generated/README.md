@@ -513,7 +513,37 @@ MullakConnector.instance.createProperty(
 ).execute();
 ```
 
+#### Optional Arguments
+We return a builder for each query. For CreateProperty, we created `CreatePropertyBuilder`. For queries and mutations with optional parameters, we return a builder class.
+The builder pattern allows Data Connect to distinguish between fields that haven't been set and fields that have been set to null. A field can be set by calling its respective setter method like below:
+```dart
+class CreatePropertyVariablesBuilder {
+  ...
+   CreatePropertyVariablesBuilder address(String? t) {
+   _address.value = t;
+   return this;
+  }
+  CreatePropertyVariablesBuilder description(String? t) {
+   _description.value = t;
+   return this;
+  }
 
+  ...
+}
+MullakConnector.instance.createProperty(
+  title: title,
+  district: district,
+  city: city,
+  propertyType: propertyType,
+  areaSqm: areaSqm,
+  rentPrice: rentPrice,
+  latitude: latitude,
+  longitude: longitude,
+)
+.address(address)
+.description(description)
+.execute();
+```
 
 #### Return Type
 `execute()` returns a `OperationResult<CreatePropertyData, CreatePropertyVariables>`
