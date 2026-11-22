@@ -183,3 +183,106 @@ query ListMessages($chatId: UUID!) @auth(level: USER) {
     sender { id fullName }
   }
 }
+
+# ---------------- SAVED PROPERTIES (Student 4) ----------------
+# "saves" (Business Owner 0..* -- 0..* Property) is stored as a list of
+# property ids on the user's own row: users.savedPropertyIds.
+
+mutation SaveProperty($propertyId: UUID!) @auth(level: USER) {
+  user_update(key: { id_expr: "auth.uid" }, data: {
+    savedPropertyIds_update: { add: [$propertyId] }   # add = no duplicates
+  })
+}
+
+mutation UnsaveProperty($propertyId: UUID!) @auth(level: USER) {
+  user_update(key: { id_expr: "auth.uid" }, data: {
+    savedPropertyIds_update: { remove: [$propertyId] }
+  })
+}
+
+query GetMySavedPropertyIds @auth(level: USER) {
+  user(key: { id_expr: "auth.uid" }) {
+    savedPropertyIds
+  }
+}
+
+
+# ---------------- PROPERTY DISCOVERY (Student 4) ----------------
+# Full property data (all photos + description) for Explore, Details,
+# Saved, Compare and Recommendations.
+
+query ListDiscoveryProperties @auth(level: USER) {
+  properties(where: { status: { eq: "available" } }) {
+    id
+    title
+    district
+    city
+    propertyType
+    areaSqm
+    rentPrice
+    status
+    latitude
+    longitude
+    estimatedPrice
+    address
+    description
+    owner { id }
+    images: images_on_property(orderBy: [{ displayOrder: ASC }]) { imageUrl }
+  }
+}
+
+query ListPropertiesByIds($ids: [UUID!]!) @auth(level: USER) {
+  properties(where: { id: { in: $ids } }) {
+    id
+    title
+    district
+    city
+    propertyType
+    areaSqm
+    rentPrice
+    status
+    latitude
+    longitude
+    estimatedPrice
+    address
+    description
+    owner { id }
+    images: images_on_property(orderBy: [{ displayOrder: ASC }]) { imageUrl }
+  }
+}
+
+
+# ---------------- REQUIREMENTS + RECOMMENDATIONS (Student 4) ----------------
+
+mutation CreateBusinessRequirement(
+  $businessType: String!
+  $budget: Float!
+  $requiredSpace: Float!
+  $preferredLocation: String
+) @auth(level: USER) {
+  businessRequirement_insert(data: {
+    businessOwnerId_expr: "auth.uid"
+    businessType: $businessType
+    budget: $budget
+    requiredSpace: $requiredSpace
+    preferredLocation: $preferredLocation
+  })
+}
+
+mutation CreateRecommendation(
+  $requirementId: UUID!
+  $propertyId: UUID!
+  $locationScore: Float!
+  $propertyMatchScore: Float!
+  $explanation: String!
+  $rank: Int!
+) @auth(level: USER) {
+  recommendation_insert(data: {
+    requirementId: $requirementId
+    propertyId: $propertyId
+    locationScore: $locationScore
+    propertyMatchScore: $propertyMatchScore
+    explanation: $explanation
+    rank: $rank
+  })
+}
