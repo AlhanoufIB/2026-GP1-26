@@ -6,8 +6,8 @@ class ListAvailablePropertiesVariablesBuilder {
   ListAvailablePropertiesVariablesBuilder(this._dataConnect, );
   Deserializer<ListAvailablePropertiesData> dataDeserializer = (dynamic json)  => ListAvailablePropertiesData.fromJson(jsonDecode(json));
   
-  Future<QueryResult<ListAvailablePropertiesData, void>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
-    return ref().execute(fetchPolicy: fetchPolicy);
+  Future<QueryResult<ListAvailablePropertiesData, void>> execute() {
+    return ref().execute();
   }
 
   QueryRef<ListAvailablePropertiesData, void> ref() {

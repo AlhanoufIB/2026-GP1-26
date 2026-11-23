@@ -7,8 +7,8 @@ class GetPropertyVariablesBuilder {
   GetPropertyVariablesBuilder(this._dataConnect, {required  this.id,});
   Deserializer<GetPropertyData> dataDeserializer = (dynamic json)  => GetPropertyData.fromJson(jsonDecode(json));
   Serializer<GetPropertyVariables> varsSerializer = (GetPropertyVariables vars) => jsonEncode(vars.toJson());
-  Future<QueryResult<GetPropertyData, GetPropertyVariables>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
-    return ref().execute(fetchPolicy: fetchPolicy);
+  Future<QueryResult<GetPropertyData, GetPropertyVariables>> execute() {
+    return ref().execute();
   }
 
   QueryRef<GetPropertyData, GetPropertyVariables> ref() {

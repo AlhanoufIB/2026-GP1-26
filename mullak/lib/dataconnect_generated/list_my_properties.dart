@@ -6,8 +6,8 @@ class ListMyPropertiesVariablesBuilder {
   ListMyPropertiesVariablesBuilder(this._dataConnect, );
   Deserializer<ListMyPropertiesData> dataDeserializer = (dynamic json)  => ListMyPropertiesData.fromJson(jsonDecode(json));
   
-  Future<QueryResult<ListMyPropertiesData, void>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
-    return ref().execute(fetchPolicy: fetchPolicy);
+  Future<QueryResult<ListMyPropertiesData, void>> execute() {
+    return ref().execute();
   }
 
   QueryRef<ListMyPropertiesData, void> ref() {
@@ -22,6 +22,7 @@ class ListMyPropertiesProperties {
   final String title;
   final String status;
   final double rentPrice;
+  final double areaSqm;
   final String? address;
   final List<ListMyPropertiesPropertiesMyCoverImage> myCoverImage;
   ListMyPropertiesProperties.fromJson(dynamic json):
@@ -30,6 +31,7 @@ class ListMyPropertiesProperties {
   title = nativeFromJson<String>(json['title']),
   status = nativeFromJson<String>(json['status']),
   rentPrice = nativeFromJson<double>(json['rentPrice']),
+  areaSqm = nativeFromJson<double>(json['areaSqm']),
   address = json['address'] == null ? null : nativeFromJson<String>(json['address']),
   myCoverImage = (json['myCoverImage'] as List<dynamic>)
         .map((e) => ListMyPropertiesPropertiesMyCoverImage.fromJson(e))
@@ -48,12 +50,13 @@ class ListMyPropertiesProperties {
     title == otherTyped.title && 
     status == otherTyped.status && 
     rentPrice == otherTyped.rentPrice && 
+    areaSqm == otherTyped.areaSqm && 
     address == otherTyped.address && 
     myCoverImage == otherTyped.myCoverImage;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, status.hashCode, rentPrice.hashCode, address.hashCode, myCoverImage.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, status.hashCode, rentPrice.hashCode, areaSqm.hashCode, address.hashCode, myCoverImage.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -62,6 +65,7 @@ class ListMyPropertiesProperties {
     json['title'] = nativeToJson<String>(title);
     json['status'] = nativeToJson<String>(status);
     json['rentPrice'] = nativeToJson<double>(rentPrice);
+    json['areaSqm'] = nativeToJson<double>(areaSqm);
     if (address != null) {
       json['address'] = nativeToJson<String?>(address);
     }
@@ -74,6 +78,7 @@ class ListMyPropertiesProperties {
     required this.title,
     required this.status,
     required this.rentPrice,
+    required this.areaSqm,
     this.address,
     required this.myCoverImage,
   });

@@ -20,6 +20,7 @@ type User @table(name: "users", key: "id") {
   phoneVerified: Boolean! @default(value: false)
   bOwnerFlag: Boolean! @default(value: false)   # acts as business owner
   pOwnerFlag: Boolean! @default(value: false)   # acts as property owner
+  savedPropertyIds: [UUID!] @default(value: []) # properties this user saved (business owner "saves" Property)
 }
 # BUSINESS_OWNER / PROPERTY_OWNER subtypes: represented by the two flags
 # above (mandatory, overlapping specialization). Foreign keys that the
@@ -42,7 +43,7 @@ type Property @table(name: "properties") {
   estimatedPrice: Float                          # filled later by the rent prediction model
   address: String @col(dataType: "varchar(255)") # street / building, e.g. "طريق الملك فهد، مبنى 12"
   description: String                            # free text shown in "وصف العقار"
-  hasParking: Boolean
+  hasParking: Boolean @default(value: false)
 }
 
 

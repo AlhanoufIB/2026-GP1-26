@@ -1,5 +1,3 @@
-import 'package:firebase_data_connect/firebase_data_connect.dart';
-
 import '../../dataconnect_generated/generated.dart';
 import '../../models/property.dart';
 
@@ -11,7 +9,7 @@ class MapPropertyService {
       getAvailableProperties() async {
     final result = await _connector
         .listAvailableProperties()
-        .execute(fetchPolicy: QueryFetchPolicy.serverOnly);
+        .execute();
 
     return result.data.properties;
   }
@@ -20,7 +18,7 @@ class MapPropertyService {
   Future<Property?> getPropertyById(String propertyId) async {
     final result = await _connector
         .getProperty(id: propertyId)
-        .execute(fetchPolicy: QueryFetchPolicy.serverOnly);
+        .execute();
 
     final data = result.data.property;
 

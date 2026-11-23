@@ -65,8 +65,10 @@ mutation CreateProperty(
   $rentPrice: Float!
   $latitude: Float!
   $longitude: Float!
+  $estimatedPrice: Float          
   $address: String
   $description: String
+  $hasParking: Boolean
 ) @auth(level: USER) {
   property_insert(data: {
     ownerId_expr: "auth.uid"
@@ -78,9 +80,43 @@ mutation CreateProperty(
     rentPrice: $rentPrice
     latitude: $latitude
     longitude: $longitude
+    estimatedPrice: $estimatedPrice   
     address: $address
     description: $description
+    hasParking: $hasParking
   })
+}
+
+mutation UpdateMyProperty(
+  $id: UUID!
+  $title: String!
+  $district: String!
+  $propertyType: String!
+  $areaSqm: Float!
+  $rentPrice: Float!
+  $latitude: Float!
+  $longitude: Float!
+  $estimatedPrice: Float
+  $address: String
+  $description: String
+  $hasParking: Boolean
+) @auth(level: USER) {
+  property_updateMany(
+    where: { id: { eq: $id }, ownerId: { eq_expr: "auth.uid" } }
+    data: {
+      title: $title
+      district: $district
+      propertyType: $propertyType
+      areaSqm: $areaSqm
+      rentPrice: $rentPrice
+      latitude: $latitude
+      longitude: $longitude
+      estimatedPrice: $estimatedPrice
+      address: $address
+      description: $description
+      hasParking: $hasParking
+    }
+  )
 }
 
 mutation UpdateMyPropertyStatus($id: UUID!, $status: String!) @auth(level: USER) {
@@ -96,6 +132,21 @@ mutation AddPropertyImage($propertyId: UUID!, $imageUrl: String!, $displayOrder:
     imageUrl: $imageUrl
     displayOrder: $displayOrder
   })
+}
+
+mutation DeleteMyPropertyImages($propertyId: UUID!) @auth(level: USER) {
+  image_deleteMany(
+    where: {
+      propertyId: { eq: $propertyId }
+      property: { ownerId: { eq_expr: "auth.uid" } }
+    }
+  )
+}
+
+mutation DeleteMyProperty($id: UUID!) @auth(level: USER) {
+  property_deleteMany(
+    where: { id: { eq: $id }, ownerId: { eq_expr: "auth.uid" } }
+  )
 }
 
 query ListAvailableProperties @auth(level: USER) {
@@ -120,8 +171,9 @@ query ListMyProperties @auth(level: USER) {
     title
     status
     rentPrice
+    areaSqm            
     address
-      myCoverImage: images_on_property(orderBy: [{ displayOrder: ASC }], limit: 1) { imageUrl }
+    myCoverImage: images_on_property(orderBy: [{ displayOrder: ASC }], limit: 1) { imageUrl }
   }
 }
 
@@ -183,4 +235,107 @@ query ListMessages($chatId: UUID!) @auth(level: USER) {
     sentAt
     sender { id fullName }
   }
+}
+
+# ---------------- SAVED PROPERTIES (Student 4) ----------------
+# "saves" (Business Owner 0..* -- 0..* Property) is stored as a list of
+# property ids on the user's own row: users.savedPropertyIds.
+
+mutation SaveProperty($propertyId: UUID!) @auth(level: USER) {
+  user_update(key: { id_expr: "auth.uid" }, data: {
+    savedPropertyIds_update: { add: [$propertyId] }   # add = no duplicates
+  })
+}
+
+mutation UnsaveProperty($propertyId: UUID!) @auth(level: USER) {
+  user_update(key: { id_expr: "auth.uid" }, data: {
+    savedPropertyIds_update: { remove: [$propertyId] }
+  })
+}
+
+query GetMySavedPropertyIds @auth(level: USER) {
+  user(key: { id_expr: "auth.uid" }) {
+    savedPropertyIds
+  }
+}
+
+
+# ---------------- PROPERTY DISCOVERY (Student 4) ----------------
+# Full property data (all photos + description) for Explore, Details,
+# Saved, Compare and Recommendations.
+
+query ListDiscoveryProperties @auth(level: USER) {
+  properties(where: { status: { eq: "available" } }) {
+    id
+    title
+    district
+    city
+    propertyType
+    areaSqm
+    rentPrice
+    status
+    latitude
+    longitude
+    estimatedPrice
+    address
+    description
+    owner { id }
+    images: images_on_property(orderBy: [{ displayOrder: ASC }]) { imageUrl }
+  }
+}
+
+query ListPropertiesByIds($ids: [UUID!]!) @auth(level: USER) {
+  properties(where: { id: { in: $ids } }) {
+    id
+    title
+    district
+    city
+    propertyType
+    areaSqm
+    rentPrice
+    status
+    latitude
+    longitude
+    estimatedPrice
+    address
+    description
+    owner { id }
+    images: images_on_property(orderBy: [{ displayOrder: ASC }]) { imageUrl }
+  }
+}
+
+
+# ---------------- REQUIREMENTS + RECOMMENDATIONS (Student 4) ----------------
+
+mutation CreateBusinessRequirement(
+  $businessType: String!
+  $budget: Float!
+  $requiredSpace: Float!
+  $preferredLocation: String
+) @auth(level: USER) {
+  businessRequirement_insert(data: {
+    businessOwnerId_expr: "auth.uid"
+    businessType: $businessType
+    budget: $budget
+    requiredSpace: $requiredSpace
+    preferredLocation: $preferredLocation
+  })
+}
+
+mutation CreateRecommendation(
+  $requirementId: UUID!
+  $propertyId: UUID!
+  $locationScore: Float!
+  $propertyMatchScore: Float!
+  $explanation: String!
+  $rank: Int!
+) @auth(level: USER) {
+  recommendation_insert(data: {
+    requirementId: $requirementId
+    propertyId: $propertyId
+    locationScore: $locationScore
+    propertyMatchScore: $propertyMatchScore
+    explanation: $explanation
+    rank: $rank
+  })
 }

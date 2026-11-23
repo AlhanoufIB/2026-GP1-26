@@ -7,10 +7,10 @@ MullakConnector.instance.UpdateMyName(updateMyNameVariables).execute();
 MullakConnector.instance.CreateReport(createReportVariables).execute();
 MullakConnector.instance.CreateReview(createReviewVariables).execute();
 MullakConnector.instance.CreateProperty(createPropertyVariables).execute();
+MullakConnector.instance.UpdateMyProperty(updateMyPropertyVariables).execute();
 MullakConnector.instance.UpdateMyPropertyStatus(updateMyPropertyStatusVariables).execute();
 MullakConnector.instance.AddPropertyImage(addPropertyImageVariables).execute();
-MullakConnector.instance.ListAvailableProperties().execute();
-MullakConnector.instance.ListMyProperties().execute();
+MullakConnector.instance.DeleteMyPropertyImages(deleteMyPropertyImagesVariables).execute();
 
 ```
 
@@ -23,8 +23,8 @@ Optional fields can be discovered based on classes that have `Optional` object t
 This is an example of a mutation with an optional field:
 
 ```dart
-await MullakConnector.instance.CreateProperty({ ... })
-.address(...)
+await MullakConnector.instance.CreateBusinessRequirement({ ... })
+.preferredLocation(...)
 .execute();
 ```
 

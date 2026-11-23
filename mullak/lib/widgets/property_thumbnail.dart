@@ -2,12 +2,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-class PropertyImage extends StatelessWidget {
+/// رابط (محفوظة في Firebase) أو مسار ملف (لسا ما انرفعت)
+ImageProvider imageProviderFor(String path) => path.startsWith('http')
+    ? NetworkImage(path)
+    : FileImage(File(path)) as ImageProvider;
+
+class PropertyThumbnail extends StatelessWidget {
   final String? path;
   final double size;
   final double radius;
 
-  const PropertyImage({
+  const PropertyThumbnail({
     super.key,
     required this.path,
     this.size = 72,
@@ -25,7 +30,13 @@ class PropertyImage extends StatelessWidget {
         child: path == null
             ? const Icon(Icons.storefront_outlined,
                 color: AppColors.primary, size: 30)
-            : Image.file(File(path!), fit: BoxFit.cover),
+            : Image(
+                image: imageProviderFor(path!),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(
+                    Icons.broken_image_outlined,
+                    color: AppColors.textMuted),
+              ),
       ),
     );
   }
