@@ -1,0 +1,155 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Check whether the signed-in user belongs to this chat.
+    function isParticipant(chatId) {
+      return request.auth != null
+        && exists(
+          /databases/$(database)/documents/chats/$(chatId)
+        )
+        && request.auth.uid in get(
+          /databases/$(database)/documents/chats/$(chatId)
+        ).data.participantIds;
+    }
+
+    match /chats/{chatId} {
+
+      // Only chat participants can read the conversation.
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.participantIds;
+
+      // Create a conversation with the required fields.
+      allow create: if request.auth != null
+
+        && request.resource.data.keys().hasAll([
+          'propertyId',
+          'businessOwnerId',
+          'businessOwnerName',
+          'propertyOwnerId',
+          'participantIds',
+          'createdAt',
+          'lastMessageAt',
+          'lastMessageText'
+        ])
+
+        && request.resource.data.keys().hasOnly([
+          'propertyId',
+          'businessOwnerId',
+          'businessOwnerName',
+          'propertyOwnerId',
+          'participantIds',
+          'createdAt',
+          'lastMessageAt',
+          'lastMessageText'
+        ])
+
+        && request.resource.data.propertyId is string
+        && request.resource.data.propertyId.size() > 0
+        && request.resource.data.propertyId.size() <= 128
+
+        && request.resource.data.businessOwnerId
+          == request.auth.uid
+
+        && request.resource.data.businessOwnerName is string
+        && request.resource.data.businessOwnerName.size() > 0
+        && request.resource.data.businessOwnerName.size() <= 100
+
+        && request.resource.data.propertyOwnerId is string
+        && request.resource.data.propertyOwnerId.size() > 0
+        && request.resource.data.propertyOwnerId
+          != request.auth.uid
+
+        && request.resource.data.participantIds == [
+          request.auth.uid,
+          request.resource.data.propertyOwnerId
+        ]
+
+        && chatId == (
+          request.resource.data.propertyId
+          + '_'
+          + request.auth.uid
+          + '_'
+          + request.resource.data.propertyOwnerId
+        )
+
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.lastMessageAt == request.time
+        && request.resource.data.lastMessageText == '';
+
+      // Participants can update only the last-message preview.
+      allow update: if isParticipant(chatId)
+
+        && request.resource.data.diff(
+          resource.data
+        ).affectedKeys().hasOnly([
+          'lastMessageText',
+          'lastMessageAt',
+          'lastSenderId'
+        ])
+
+        && request.resource.data.lastMessageText is string
+        && request.resource.data.lastMessageText.size() <= 2000
+
+        && request.resource.data.lastMessageAt == request.time
+        && request.resource.data.lastSenderId
+          == request.auth.uid;
+
+      // Chat deletion is not allowed.
+      allow delete: if false;
+
+      match /messages/{messageId} {
+
+        // Only participants can read messages.
+        allow read: if isParticipant(chatId);
+
+        // Create a message.
+        allow create: if isParticipant(chatId)
+
+          && request.resource.data.keys().hasAll([
+            'senderId',
+            'content',
+            'sentAt',
+            'isRead'
+          ])
+
+          && request.resource.data.keys().hasOnly([
+            'senderId',
+            'content',
+            'sentAt',
+            'isRead'
+          ])
+
+          && request.resource.data.senderId
+            == request.auth.uid
+
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0
+          && request.resource.data.content.size() <= 2000
+
+          && request.resource.data.sentAt == request.time
+          && request.resource.data.isRead == false;
+
+        // Only the receiver can mark a message as read.
+        allow update: if isParticipant(chatId)
+
+          && resource.data.senderId != request.auth.uid
+
+          // No other message fields may be modified.
+          && request.resource.data.diff(
+            resource.data
+          ).affectedKeys().hasOnly([
+            'isRead'
+          ])
+
+          // Only allow unread -> read.
+          && resource.data.isRead == false
+          && request.resource.data.isRead == true;
+
+        // Message deletion is not allowed.
+        allow delete: if false;
+      }
+    }
+  }
+}

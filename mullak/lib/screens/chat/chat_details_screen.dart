@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/chat.dart';
-import '../../repositories/chat_repository.dart';
+import '../../services/chat_firestore_service.dart';
 import '../../theme/app_colors.dart';
 
 class ChatDetailsScreen extends StatefulWidget {
@@ -24,34 +26,218 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
   final ScrollController _scrollController =
       ScrollController();
 
-  final ChatRepository _repository =
-      ChatRepository.instance;
+  final ChatFirestoreService _chatService =
+      ChatFirestoreService.instance;
 
   static const Color _avatarColor = Color(0xFFEDE3C9);
+  static const int _maxMessageLength = 2000;
+
+  Stream<QuerySnapshot<Map<String, dynamic>>>?
+      _messagesStream;
+
+  bool _isSending = false;
+
+  // Prevent duplicate read updates while a request is running.
+  final Set<String> _pendingReadIds = {};
 
   ChatConversation get _conversation => widget.conversation;
 
-  void _sendMessage() {
-    final text = _messageController.text.trim();
+  String? get _chatId => _conversation.chatId;
 
-    if (text.isEmpty) return;
+  String get _otherParticipantRole {
+    if (_chatService.currentUserId == _conversation.ownerId) {
+      return 'صاحب النشاط';
+    }
+    return 'مالك العقار';
+  }
 
-    _repository.sendMessage(
-      _conversation,
-      text,
+  @override
+  void initState() {
+    super.initState();
+
+    final chatId = _chatId;
+
+    if (chatId != null && chatId.isNotEmpty) {
+      _messagesStream = _chatService.watchMessages(chatId);
+    }
+  }
+
+  String _formatTime(DateTime? date) {
+    if (date == null) return 'الآن';
+
+    final hour = date.hour % 12 == 0
+        ? 12
+        : date.hour % 12;
+
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = date.hour < 12 ? 'ص' : 'م';
+
+    return '$hour:$minute $period';
+  }
+
+  String _formatDay(DateTime? date) {
+    if (date == null) return 'اليوم';
+
+    final now = DateTime.now();
+
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
     );
 
-    _messageController.clear();
+    final messageDay = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) return;
+    final difference = today.difference(messageDay).inDays;
 
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
+    if (difference == 0) return 'اليوم';
+    if (difference == 1) return 'أمس';
+
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  bool _sameDay(DateTime? first, DateTime? second) {
+    if (first == null || second == null) {
+      return first == null && second == null;
+    }
+
+    return first.year == second.year &&
+        first.month == second.month &&
+        first.day == second.day;
+  }
+
+  ChatMessage _messageFromDocument(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) {
+    final data = document.data();
+    final timestamp = data['sentAt'];
+
+    final DateTime? sentAt =
+        timestamp is Timestamp ? timestamp.toDate() : null;
+
+    final senderId = data['senderId'] as String? ?? '';
+
+    return ChatMessage(
+      messageId: document.id,
+      senderId: senderId,
+      sentAt: sentAt,
+      text: data['content'] as String? ?? '',
+      isMine: senderId == _chatService.currentUserId,
+      time: _formatTime(sentAt),
+    );
+  }
+
+  // Mark incoming unread messages as read after rendering.
+  void _scheduleReadUpdates(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) {
+    final chatId = _chatId;
+    if (chatId == null || chatId.isEmpty) return;
+
+    final userId = _chatService.currentUserId;
+
+    final unreadDocuments = documents.where((document) {
+      final data = document.data();
+      final senderId = data['senderId'] as String? ?? '';
+
+      return senderId.isNotEmpty &&
+          senderId != userId &&
+          data['isRead'] != true &&
+          !_pendingReadIds.contains(document.id);
+    }).toList();
+
+    if (unreadDocuments.isEmpty) return;
+
+    final ids = unreadDocuments.map((doc) => doc.id).toList();
+
+    _pendingReadIds.addAll(ids);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        _pendingReadIds.removeAll(ids);
+        return;
+      }
+
+      try {
+        await _chatService.markMessagesAsRead(
+          chatId: chatId,
+          messages: unreadDocuments,
+        );
+      } catch (error) {
+        debugPrint('Mark messages as read error: $error');
+      } finally {
+        _pendingReadIds.removeAll(ids);
+      }
     });
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    final chatId = _chatId;
+
+    if (text.isEmpty || chatId == null || _isSending) {
+      return;
+    }
+
+    if (text.length > _maxMessageLength) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'الرسالة طويلة جدًا. الحد الأقصى 2000 حرف.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSending = true;
+    });
+
+    try {
+      await _chatService.sendMessage(
+        chatId: chatId,
+        text: text,
+      );
+
+      if (!mounted) return;
+
+      _messageController.clear();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scrollController.hasClients) {
+          return;
+        }
+
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      });
+    } catch (error) {
+      debugPrint('Chat send error: $error');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'تعذر إرسال الرسالة. حاولي مرة أخرى.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
   }
 
   Widget _buildHeader() {
@@ -97,6 +283,8 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
               children: [
                 Text(
                   _conversation.ownerName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -107,7 +295,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
                 const SizedBox(height: 4),
 
                 Text(
-                  'مالك العقار · ${_conversation.propertyLabel}',
+                  '$_otherParticipantRole · ${_conversation.propertyLabel}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -173,17 +361,51 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
     );
   }
 
-  Widget _buildMessages() {
-    return Expanded(
-      child: ListenableBuilder(
-        listenable: _repository,
-        builder: (context, _) {
-          final messages = _conversation.messages;
+  Widget _dateSeparator(DateTime? date) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: 14,
+        ),
+        child: Text(
+          _formatDay(date),
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppColors.hint,
+          ),
+        ),
+      ),
+    );
+  }
 
-          if (messages.isEmpty) {
+  Widget _buildMessages() {
+    if (_messagesStream == null) {
+      return const Expanded(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'هذه المحادثة غير مرتبطة بقاعدة البيانات بعد.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.hint,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Expanded(
+      child: StreamBuilder<
+          QuerySnapshot<Map<String, dynamic>>>(
+        stream: _messagesStream,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
             return const Center(
               child: Text(
-                'ابدأ محادثتك مع مالك العقار',
+                'تعذر تحميل الرسائل. تحققي من الاتصال.',
                 style: TextStyle(
                   fontSize: 13,
                   color: AppColors.hint,
@@ -192,47 +414,61 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
             );
           }
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                controller: _scrollController,
-                reverse: true,
-                padding: const EdgeInsets.fromLTRB(
-                  16, 14, 16, 12,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: (constraints.maxHeight - 26)
-                        .clamp(0.0, double.infinity)
-                        .toDouble(),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: Text(
-                            messages.first.time == 'أمس'
-                                ? 'أمس'
-                                : messages.first.time == 'الأحد'
-                                    ? 'الأحد'
-                                    : 'اليوم',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.hint,
-                            ),
-                          ),
-                        ),
-                      ),
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.brown,
+              ),
+            );
+          }
 
-                      for (final message in messages)
-                        _messageBubble(message),
-                    ],
-                  ),
+          final documents = snapshot.data!.docs;
+
+          if (documents.isEmpty) {
+            return const Center(
+              child: Text(
+                'ابدأ المحادثة الآن',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.hint,
                 ),
-              );
+              ),
+            );
+          }
+
+          // Automatically mark received messages as read.
+          _scheduleReadUpdates(documents);
+
+          final messages = documents
+              .map(_messageFromDocument)
+              .toList();
+
+          final items = <Widget>[];
+
+          DateTime? previousDate;
+          bool isFirstMessage = true;
+
+          for (final message in messages) {
+            if (isFirstMessage ||
+                !_sameDay(previousDate, message.sentAt)) {
+              items.add(_dateSeparator(message.sentAt));
+            }
+
+            items.add(_messageBubble(message));
+
+            previousDate = message.sentAt;
+            isFirstMessage = false;
+          }
+
+          return ListView.builder(
+            controller: _scrollController,
+            reverse: true,
+            padding: const EdgeInsets.fromLTRB(
+              16, 14, 16, 12,
+            ),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              return items[items.length - 1 - index];
             },
           );
         },
@@ -241,6 +477,8 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
   }
 
   Widget _buildMessageInput() {
+    final canSend = _chatId != null && !_isSending;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(
         16, 12, 16, 12,
@@ -261,9 +499,13 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
             Expanded(
               child: TextField(
                 controller: _messageController,
+                enabled: canSend,
                 textDirection: TextDirection.rtl,
                 minLines: 1,
                 maxLines: 4,
+                maxLength: _maxMessageLength,
+                maxLengthEnforcement:
+                    MaxLengthEnforcement.enforced,
                 textInputAction: TextInputAction.newline,
 
                 style: const TextStyle(
@@ -273,6 +515,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
 
                 decoration: InputDecoration(
                   hintText: 'اكتب رسالة',
+                  counterText: '',
                   hintStyle: const TextStyle(
                     fontSize: 13,
                     color: AppColors.hint,
@@ -281,27 +524,31 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
                   filled: true,
                   fillColor: Colors.white,
 
-                  contentPadding: const EdgeInsets.symmetric(
+                  contentPadding:
+                      const EdgeInsets.symmetric(
                     horizontal: 18,
                     vertical: 13,
                   ),
 
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius:
+                        BorderRadius.circular(28),
                     borderSide: const BorderSide(
                       color: AppColors.border,
                     ),
                   ),
 
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius:
+                        BorderRadius.circular(28),
                     borderSide: const BorderSide(
                       color: AppColors.border,
                     ),
                   ),
 
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius:
+                        BorderRadius.circular(28),
                     borderSide: const BorderSide(
                       color: AppColors.brown,
                     ),
@@ -313,19 +560,29 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
             const SizedBox(width: 10),
 
             Material(
-              color: AppColors.brown,
+              color: canSend
+                  ? AppColors.brown
+                  : AppColors.hint,
               shape: const CircleBorder(),
               child: InkWell(
                 customBorder: const CircleBorder(),
-                onTap: _sendMessage,
-                child: const SizedBox(
+                onTap: canSend ? _sendMessage : null,
+                child: SizedBox(
                   width: 48,
                   height: 48,
-                  child: Icon(
-                    Icons.send_outlined,
-                    color: Colors.white,
-                    size: 23,
-                  ),
+                  child: _isSending
+                      ? const Padding(
+                          padding: EdgeInsets.all(13),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.send_outlined,
+                          color: Colors.white,
+                          size: 23,
+                        ),
                 ),
               ),
             ),

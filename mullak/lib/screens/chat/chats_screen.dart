@@ -1,30 +1,193 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/chat.dart';
-import '../../repositories/chat_repository.dart';
+import '../../services/chat_firestore_service.dart';
+import '../../services/chat_property_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_bottom_nav.dart';
 
 import 'chat_details_screen.dart';
 
-class ChatsScreen extends StatelessWidget {
+class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key});
 
+  @override
+  State<ChatsScreen> createState() => _ChatsScreenState();
+}
+
+class _ChatsScreenState extends State<ChatsScreen> {
   static const Color _avatarColor = Color(0xFFEDE3C9);
-  static const Color _unreadColor = Color(0xFFD94B40);
+
+  final ChatFirestoreService _chatService =
+      ChatFirestoreService.instance;
+
+  final ChatPropertyService _propertyService =
+      ChatPropertyService.instance;
+
+  final Map<String, Future<ChatPropertyInfo?>> _propertyCache = {};
+
+  // Cache unread-message streams for each conversation.
+  final Map<
+      String,
+      Stream<QuerySnapshot<Map<String, dynamic>>>>
+      _unreadStreams = {};
+
+  late final Stream<QuerySnapshot<Map<String, dynamic>>>
+      _chatsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatsStream = _chatService.watchMyChats();
+  }
+
+  Future<ChatPropertyInfo?> _getProperty(String propertyId) {
+    return _propertyCache.putIfAbsent(
+      propertyId,
+      () => _propertyService.getProperty(propertyId),
+    );
+  }
+
+  // Listen only to unread messages in this conversation.
+  Stream<QuerySnapshot<Map<String, dynamic>>> _watchUnreadMessages(
+    String chatId,
+  ) {
+    return _unreadStreams.putIfAbsent(
+      chatId,
+      () => FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .where('isRead', isEqualTo: false)
+          .snapshots(),
+    );
+  }
+
+  String _formatTime(dynamic value) {
+    if (value is! Timestamp) return 'الآن';
+
+    final date = value.toDate();
+    final now = DateTime.now();
+
+    final today = DateTime(now.year, now.month, now.day);
+
+    final messageDay = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    );
+
+    final difference = today.difference(messageDay).inDays;
+
+    if (difference == 1) return 'أمس';
+
+    if (difference != 0) {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+
+    final hour = date.hour % 12 == 0
+        ? 12
+        : date.hour % 12;
+
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = date.hour < 12 ? 'ص' : 'م';
+
+    return '$hour:$minute $period';
+  }
+
+  String _otherParticipantName({
+    required String propertyOwnerId,
+    required String businessOwnerName,
+    required ChatPropertyInfo? propertyInfo,
+  }) {
+    final currentUserId = _chatService.currentUserId;
+
+    // The property owner sees the business owner's name.
+    if (currentUserId == propertyOwnerId) {
+      final name = businessOwnerName.trim();
+
+      return name.isNotEmpty ? name : 'صاحب النشاط';
+    }
+
+    // The business owner sees the property owner's name.
+    final ownerName = propertyInfo?.ownerName.trim();
+
+    if (ownerName != null && ownerName.isNotEmpty) {
+      return ownerName;
+    }
+
+    return 'مالك العقار';
+  }
 
   void _openChat(
     BuildContext context,
     ChatConversation conversation,
   ) {
-    ChatRepository.instance.markAsRead(conversation);
-
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ChatDetailsScreen(
           conversation: conversation,
         ),
       ),
+    );
+  }
+
+  // Show a real-time unread-message count.
+  Widget _buildUnreadCount(String chatId) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _watchUnreadMessages(chatId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.hasError) {
+          return const SizedBox.shrink();
+        }
+
+        final currentUserId = _chatService.currentUserId;
+
+        // Count messages received from the other participant.
+        final unreadCount = snapshot.data!.docs.where((document) {
+          final senderId = document.data()['senderId'];
+
+          return senderId is String &&
+              senderId.isNotEmpty &&
+              senderId != currentUserId;
+        }).length;
+
+        if (unreadCount == 0) {
+          return const SizedBox.shrink();
+        }
+
+        final countText = unreadCount > 99
+            ? '99+'
+            : unreadCount.toString();
+
+        return Container(
+          constraints: const BoxConstraints(
+            minWidth: 23,
+            minHeight: 23,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 6,
+            vertical: 3,
+          ),
+          decoration: const BoxDecoration(
+            color: AppColors.brown,
+            borderRadius: BorderRadius.all(
+              Radius.circular(14),
+            ),
+          ),
+          child: Center(
+            child: Text(
+              countText,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -49,7 +212,6 @@ class ChatsScreen extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Owner avatar.
               CircleAvatar(
                 radius: 23,
                 backgroundColor: _avatarColor,
@@ -65,7 +227,6 @@ class ChatsScreen extends StatelessWidget {
 
               const SizedBox(width: 12),
 
-              // Owner name, property and last message.
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,11 +260,8 @@ class ChatsScreen extends StatelessWidget {
                       conversation.lastMessage,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        fontWeight: conversation.isUnread
-                            ? FontWeight.w700
-                            : FontWeight.w400,
                         color: AppColors.brownDark,
                       ),
                     ),
@@ -113,33 +271,27 @@ class ChatsScreen extends StatelessWidget {
 
               const SizedBox(width: 8),
 
-              // Time and unread indicator.
               SizedBox(
-                width: 57,
+                width: 65,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       conversation.lastTime,
+                      textAlign: TextAlign.end,
                       style: const TextStyle(
                         fontSize: 10,
                         color: AppColors.hint,
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
 
-                    Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: conversation.isUnread
-                            ? _unreadColor
-                            : Colors.transparent,
-                        shape: BoxShape.circle,
+                    if (conversation.chatId != null)
+                      _buildUnreadCount(
+                        conversation.chatId!,
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -150,10 +302,75 @@ class ChatsScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildChatDocument(
+    BuildContext context,
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) {
+    final data = document.data();
+
+    final propertyId =
+        data['propertyId'] as String? ?? '';
+
+    final ownerId =
+        data['propertyOwnerId'] as String? ?? '';
+
+    final businessOwnerId =
+        data['businessOwnerId'] as String? ?? '';
+
+    // Name saved when the business owner creates the chat.
+    final businessOwnerName =
+        data['businessOwnerName'] as String? ?? '';
+
+    final lastMessage =
+        data['lastMessageText'] as String? ?? '';
+
+    final lastTime = _formatTime(
+      data['lastMessageAt'],
+    );
+
+    if (propertyId.isEmpty || ownerId.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return FutureBuilder<ChatPropertyInfo?>(
+      future: _getProperty(propertyId),
+      builder: (context, snapshot) {
+        // Keep chat accessible even if property data
+        // is unavailable or still loading.
+        final fetchedInfo = snapshot.data;
+
+        final propertyInfo =
+            fetchedInfo?.property.ownerId == ownerId
+                ? fetchedInfo
+                : null;
+
+        final otherParticipant = _otherParticipantName(
+          propertyOwnerId: ownerId,
+          businessOwnerName: businessOwnerName,
+          propertyInfo: propertyInfo,
+        );
+
+        final conversation = ChatConversation(
+          chatId: document.id,
+          businessOwnerId: businessOwnerId,
+          property: propertyInfo?.property,
+          propertyId: propertyId,
+          ownerId: ownerId,
+          ownerName: otherParticipant,
+          lastTime: lastTime,
+          lastMessageText: lastMessage,
+        );
+
+        return _chatCard(
+          context,
+          conversation,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final repository = ChatRepository.instance;
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -161,7 +378,9 @@ class ChatsScreen extends StatelessWidget {
 
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+            padding: const EdgeInsets.fromLTRB(
+              20, 24, 20, 0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -177,12 +396,51 @@ class ChatsScreen extends StatelessWidget {
                 const SizedBox(height: 22),
 
                 Expanded(
-                  child: ListenableBuilder(
-                    listenable: repository,
-                    builder: (context, _) {
-                      final conversations = repository.conversations;
+                  child: StreamBuilder<
+                      QuerySnapshot<Map<String, dynamic>>>(
+                    stream: _chatsStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return const Center(
+                          child: Text(
+                            'تعذر تحميل المحادثات.',
+                            style: TextStyle(
+                              color: AppColors.hint,
+                            ),
+                          ),
+                        );
+                      }
 
-                      if (conversations.isEmpty) {
+                      if (!snapshot.hasData) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.brown,
+                          ),
+                        );
+                      }
+
+                      final documents =
+                          snapshot.data!.docs.toList();
+
+                      documents.sort((a, b) {
+                        final aTime =
+                            a.data()['lastMessageAt'];
+
+                        final bTime =
+                            b.data()['lastMessageAt'];
+
+                        final aMillis = aTime is Timestamp
+                            ? aTime.millisecondsSinceEpoch
+                            : 0;
+
+                        final bMillis = bTime is Timestamp
+                            ? bTime.millisecondsSinceEpoch
+                            : 0;
+
+                        return bMillis.compareTo(aMillis);
+                      });
+
+                      if (documents.isEmpty) {
                         return const Center(
                           child: Text(
                             'لا توجد محادثات حالياً',
@@ -194,14 +452,16 @@ class ChatsScreen extends StatelessWidget {
                       }
 
                       return ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        itemCount: conversations.length,
+                        padding: const EdgeInsets.only(
+                          bottom: 20,
+                        ),
+                        itemCount: documents.length,
                         separatorBuilder: (_, _) =>
                             const SizedBox(height: 12),
                         itemBuilder: (context, index) {
-                          return _chatCard(
+                          return _buildChatDocument(
                             context,
-                            conversations[index],
+                            documents[index],
                           );
                         },
                       );
@@ -213,7 +473,6 @@ class ChatsScreen extends StatelessWidget {
           ),
         ),
 
-        // Shared bottom navigation bar.
         bottomNavigationBar: const AppBottomNav(
           current: AppTab.chats,
         ),

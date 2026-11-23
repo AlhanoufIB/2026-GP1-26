@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../dataconnect_generated/generated.dart';
 import '../../../models/property.dart';
 import '../../../theme/app_colors.dart';
 
@@ -11,7 +12,7 @@ class MapFilterSelection {
   const MapFilterSelection({
     this.propertyType,
     this.areaRange,
-    this.priceRange = const RangeValues(0, 150000),
+    this.priceRange = const RangeValues(0, double.infinity),
   });
 
   bool matches(Property property) {
@@ -49,9 +50,14 @@ class MapFilterSelection {
 class MapFilterSheet extends StatefulWidget {
   final MapFilterSelection initialFilters;
 
+  // All available properties fetched from Firebase Data Connect.
+  // Pass the complete unfiltered list from the map screen.
+  final List<ListAvailablePropertiesProperties> availableProperties;
+
   const MapFilterSheet({
     super.key,
     required this.initialFilters,
+    required this.availableProperties,
   });
 
   @override
@@ -64,29 +70,126 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
   late String? _selectedArea;
   late RangeValues _priceRange;
 
+  late double _maxPrice;
+  late List<String> _availableTypes;
+  late Set<String> _availableAreaRanges;
+
+  static const Map<String, String> _typeLabels = {
+    PropertyType.shop: 'محل تجاري',
+    PropertyType.office: 'مكتب',
+    PropertyType.kiosk: 'كشك',
+  };
+
+  static const Map<String, String> _areaLabels = {
+    'under50': 'أقل من 50',
+    '50to100': '50–100',
+    '100to200': '100–200',
+    'over200': 'أكثر من 200',
+  };
+
   @override
   void initState() {
     super.initState();
-    _selectedType = widget.initialFilters.propertyType;
-    _selectedArea = widget.initialFilters.areaRange;
-    _priceRange = widget.initialFilters.priceRange;
+
+    _prepareFilterData();
+
+    final initial = widget.initialFilters;
+
+    _selectedType = _availableTypes.contains(initial.propertyType)
+        ? initial.propertyType
+        : null;
+
+    _selectedArea =
+        _availableAreaRanges.contains(initial.areaRange)
+            ? initial.areaRange
+            : null;
+
+    _priceRange = _normalizePriceRange(initial.priceRange);
+  }
+
+  void _prepareFilterData() {
+    final properties = widget.availableProperties;
+
+    // Highest annual rent in the available properties.
+    // The minimum is always zero.
+    _maxPrice = 0;
+
+    for (final property in properties) {
+      final price = property.rentPrice.toDouble();
+
+      if (price > _maxPrice) {
+        _maxPrice = price;
+      }
+    }
+
+    // Only property types that actually exist in Firebase.
+    _availableTypes = properties
+        .map((property) => property.propertyType)
+        .toSet()
+        .toList()
+      ..sort();
+
+    // Only area categories containing available properties.
+    _availableAreaRanges = {};
+
+    for (final property in properties) {
+      final area = property.areaSqm;
+
+      if (area < 50) {
+        _availableAreaRanges.add('under50');
+      } else if (area <= 100) {
+        _availableAreaRanges.add('50to100');
+      } else if (area <= 200) {
+        _availableAreaRanges.add('100to200');
+      } else {
+        _availableAreaRanges.add('over200');
+      }
+    }
+  }
+
+  RangeValues _normalizePriceRange(RangeValues range) {
+    if (_maxPrice <= 0) {
+      return const RangeValues(0, 0);
+    }
+
+    final start = range.start
+        .clamp(0.0, _maxPrice)
+        .toDouble();
+
+    final end = range.end.isInfinite
+        ? _maxPrice
+        : range.end.clamp(0.0, _maxPrice).toDouble();
+
+    return RangeValues(
+      start <= end ? start : end,
+      end,
+    );
   }
 
   void _clearAll() {
     setState(() {
       _selectedType = null;
       _selectedArea = null;
-      _priceRange = const RangeValues(0, 150000);
+      _priceRange = RangeValues(0, _maxPrice);
     });
   }
 
   void _applyFilters() {
+    // Infinity means no upper price restriction.
+    // This allows new, more expensive properties to be included
+    // when the user has selected the entire price range.
+    final isFullRange =
+        _priceRange.start == 0 &&
+        _priceRange.end == _maxPrice;
+
     Navigator.pop(
       context,
       MapFilterSelection(
         propertyType: _selectedType,
         areaRange: _selectedArea,
-        priceRange: _priceRange,
+        priceRange: isFullRange
+            ? const RangeValues(0, double.infinity)
+            : _priceRange,
       ),
     );
   }
@@ -162,6 +265,8 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final hasProperties = widget.availableProperties.isNotEmpty;
+
     return Container(
       decoration: const BoxDecoration(
         color: Color(0xFFFDFBF8),
@@ -227,8 +332,7 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
                   vertical: 10,
                 ),
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'نوع النشاط',
@@ -242,7 +346,7 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
                     const SizedBox(height: 5),
 
                     const Text(
-                      'خيارات تجريبية حسب أنواع العقارات المتاحة',
+                      'أنواع العقارات المتاحة',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.hint,
@@ -251,24 +355,25 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
 
                     const SizedBox(height: 14),
 
-                    Wrap(
-                      spacing: 9,
-                      runSpacing: 10,
-                      children: [
-                        _typeChip(
-                          'محل تجاري',
-                          PropertyType.shop,
+                    if (_availableTypes.isEmpty)
+                      const Text(
+                        'لا توجد أنواع عقارات متاحة حاليًا',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.hint,
                         ),
-                        _typeChip(
-                          'مكتب',
-                          PropertyType.office,
-                        ),
-                        _typeChip(
-                          'كشك',
-                          PropertyType.kiosk,
-                        ),
-                      ],
-                    ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 9,
+                        runSpacing: 10,
+                        children: _availableTypes.map((type) {
+                          return _typeChip(
+                            _typeLabels[type] ?? type,
+                            type,
+                          );
+                        }).toList(),
+                      ),
 
                     const SizedBox(height: 38),
 
@@ -283,54 +388,64 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
 
                     const SizedBox(height: 20),
 
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        activeTrackColor: AppColors.brown,
-                        inactiveTrackColor:
-                            const Color(0xFFE2D6C8),
-                        thumbColor: Colors.white,
-                        overlayColor:
-                            AppColors.brown.withValues(
-                          alpha: 0.12,
+                    if (hasProperties && _maxPrice > 0) ...[
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: AppColors.brown,
+                          inactiveTrackColor:
+                              const Color(0xFFE2D6C8),
+                          thumbColor: Colors.white,
+                          overlayColor:
+                              AppColors.brown.withValues(
+                            alpha: 0.12,
+                          ),
+                          rangeThumbShape:
+                              const RoundRangeSliderThumbShape(
+                            enabledThumbRadius: 9,
+                          ),
                         ),
-                        rangeThumbShape:
-                            const RoundRangeSliderThumbShape(
-                          enabledThumbRadius: 9,
+                        child: RangeSlider(
+                          min: 0,
+                          max: _maxPrice,
+                          divisions: 30,
+                          values: _priceRange,
+                          onChanged: (values) {
+                            setState(() {
+                              _priceRange = values;
+                            });
+                          },
                         ),
                       ),
-                      child: RangeSlider(
-                        min: 0,
-                        max: 150000,
-                        divisions: 30,
-                        values: _priceRange,
-                        onChanged: (values) {
-                          setState(() {
-                            _priceRange = values;
-                          });
-                        },
-                      ),
-                    ),
 
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${_price(_priceRange.start)} ر.س',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.brownDark,
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${_price(_priceRange.start)} ر.س',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.brownDark,
+                            ),
                           ),
-                        ),
-                        Text(
-                          '${_price(_priceRange.end)} ر.س',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.brownDark,
+                          Text(
+                            '${_price(_priceRange.end)} ر.س',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.brownDark,
+                            ),
                           ),
+                        ],
+                      ),
+                    ] else ...[
+                      const Text(
+                        'لا توجد أسعار إيجار متاحة لتحديد النطاق',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.hint,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
 
                     const SizedBox(height: 38),
 
@@ -345,28 +460,31 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
 
                     const SizedBox(height: 16),
 
-                    Wrap(
-                      spacing: 9,
-                      runSpacing: 10,
-                      children: [
-                        _areaChip(
-                          'أقل من 50',
-                          'under50',
+                    if (_availableAreaRanges.isEmpty)
+                      const Text(
+                        'لا توجد مساحات عقارات متاحة حاليًا',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.hint,
                         ),
-                        _areaChip(
-                          '50–100',
-                          '50to100',
-                        ),
-                        _areaChip(
-                          '100–200',
-                          '100to200',
-                        ),
-                        _areaChip(
-                          'أكثر من 200',
-                          'over200',
-                        ),
-                      ],
-                    ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 9,
+                        runSpacing: 10,
+                        children: _areaLabels.entries
+                            .where(
+                              (entry) => _availableAreaRanges
+                                  .contains(entry.key),
+                            )
+                            .map(
+                              (entry) => _areaChip(
+                                entry.value,
+                                entry.key,
+                              ),
+                            )
+                            .toList(),
+                      ),
                   ],
                 ),
               ),
