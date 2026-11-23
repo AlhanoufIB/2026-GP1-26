@@ -1,35 +1,39 @@
 import 'package:flutter/material.dart';
 import '../../models/property_myProperty.dart';
+import '../../services/price_estimation_service.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/back_link.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/app_bottom_nav.dart';
 
+/// نتيجة الشاشة:
+/// - use: المستخدم اختار السعر المقترح (price = estimated)
+/// - manual: المستخدم بيدخل السعر بنفسه (price = null)
 class PriceChoice {
-  /// null = المستخدم اختار يدخل السعر بنفسه
   final int? price;
-  const PriceChoice.use(this.price);
-  const PriceChoice.manual() : price = null;
+  final int estimated;
+  const PriceChoice.use(int value)
+      : price = value,
+        estimated = value;
+  const PriceChoice.manual(this.estimated) : price = null;
 }
 
 class SuggestedPriceScreen extends StatelessWidget {
   final String type;
   final int area;
-  final String location;
+  final String district;
 
   const SuggestedPriceScreen({
     super.key,
     required this.type,
     required this.area,
-    required this.location,
+    required this.district,
   });
-
-  // تقدير مؤقت (mock). لاحقاً يُستبدل بنتيجة نموذج الذكاء الاصطناعي من الـ API
-  int get _suggested => ((area * 894) / 500).round() * 500;
-  int get _min => ((_suggested * 0.92) / 1000).round() * 1000;
-  int get _max => ((_suggested * 1.09) / 1000).round() * 1000;
 
   @override
   Widget build(BuildContext context) {
+    final e = PriceEstimationService.estimate(
+        type: type, area: area, district: district);
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -37,20 +41,7 @@ class SuggestedPriceScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              InkWell(
-                onTap: () => Navigator.pop(context),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('العودة للعقار',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.textMuted)),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward,
-                        size: 14, color: AppColors.textMuted),
-                  ],
-                ),
-              ),
+              const BackLink(text: 'العودة للعقار'),
               const SizedBox(height: 10),
               const Text(
                 'السعر الإيجاري المقترح',
@@ -65,13 +56,9 @@ class SuggestedPriceScreen extends StatelessWidget {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      _PriceCard(
-                        price: _suggested,
-                        min: _min,
-                        max: _max,
-                      ),
+                      _PriceCard(price: e.price, min: e.min, max: e.max),
                       const SizedBox(height: 16),
-                      _InfoCard(type: type, area: area, location: location),
+                      _InfoCard(type: type, area: area, district: district),
                       const SizedBox(height: 12),
                       const Text(
                         'هذا السعر اقتراح مبني على بيانات السوق، والقرار النهائي لك.',
@@ -85,22 +72,19 @@ class SuggestedPriceScreen extends StatelessWidget {
               CustomButton(
                 text: 'استخدام هذا السعر',
                 onPressed: () =>
-                    Navigator.pop(context, PriceChoice.use(_suggested)),
+                    Navigator.pop(context, PriceChoice.use(e.price)),
               ),
               const SizedBox(height: 12),
               CustomButton(
                 text: 'سأدخل السعر بنفسي',
                 type: CustomButtonType.outlined,
                 onPressed: () =>
-                    Navigator.pop(context, const PriceChoice.manual()),
+                    Navigator.pop(context, PriceChoice.manual(e.price)),
               ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(
-  current: AppTab.myProperties,
-),
     );
   }
 }
@@ -148,9 +132,9 @@ class _PriceCard extends StatelessWidget {
 class _InfoCard extends StatelessWidget {
   final String type;
   final int area;
-  final String location;
+  final String district;
   const _InfoCard(
-      {required this.type, required this.area, required this.location});
+      {required this.type, required this.area, required this.district});
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +156,7 @@ class _InfoCard extends StatelessWidget {
                   color: AppColors.textDark)),
           const SizedBox(height: 8),
           _row('مساحة العقار ونوعه', '$type · $area م²'),
-          _row('الموقع', location.isEmpty ? '—' : location),
+          _row('الموقع', district.isEmpty ? '—' : district),
           _row('أسعار الإيجار القريبة', 'بيانات السوق', last: true),
         ],
       ),
@@ -190,8 +174,8 @@ class _InfoCard extends StatelessWidget {
       child: Row(
         children: [
           Text(label,
-              style: const TextStyle(
-                  fontSize: 12, color: AppColors.textDark)),
+              style:
+                  const TextStyle(fontSize: 12, color: AppColors.textDark)),
           const Spacer(),
           Flexible(
             child: Text(value,

@@ -65,6 +65,7 @@ mutation CreateProperty(
   $rentPrice: Float!
   $latitude: Float!
   $longitude: Float!
+  $estimatedPrice: Float          
   $address: String
   $description: String
   $hasParking: Boolean
@@ -79,10 +80,43 @@ mutation CreateProperty(
     rentPrice: $rentPrice
     latitude: $latitude
     longitude: $longitude
+    estimatedPrice: $estimatedPrice   
     address: $address
     description: $description
     hasParking: $hasParking
   })
+}
+
+mutation UpdateMyProperty(
+  $id: UUID!
+  $title: String!
+  $district: String!
+  $propertyType: String!
+  $areaSqm: Float!
+  $rentPrice: Float!
+  $latitude: Float!
+  $longitude: Float!
+  $estimatedPrice: Float
+  $address: String
+  $description: String
+  $hasParking: Boolean
+) @auth(level: USER) {
+  property_updateMany(
+    where: { id: { eq: $id }, ownerId: { eq_expr: "auth.uid" } }
+    data: {
+      title: $title
+      district: $district
+      propertyType: $propertyType
+      areaSqm: $areaSqm
+      rentPrice: $rentPrice
+      latitude: $latitude
+      longitude: $longitude
+      estimatedPrice: $estimatedPrice
+      address: $address
+      description: $description
+      hasParking: $hasParking
+    }
+  )
 }
 
 mutation UpdateMyPropertyStatus($id: UUID!, $status: String!) @auth(level: USER) {
@@ -98,6 +132,21 @@ mutation AddPropertyImage($propertyId: UUID!, $imageUrl: String!, $displayOrder:
     imageUrl: $imageUrl
     displayOrder: $displayOrder
   })
+}
+
+mutation DeleteMyPropertyImages($propertyId: UUID!) @auth(level: USER) {
+  image_deleteMany(
+    where: {
+      propertyId: { eq: $propertyId }
+      property: { ownerId: { eq_expr: "auth.uid" } }
+    }
+  )
+}
+
+mutation DeleteMyProperty($id: UUID!) @auth(level: USER) {
+  property_deleteMany(
+    where: { id: { eq: $id }, ownerId: { eq_expr: "auth.uid" } }
+  )
 }
 
 query ListAvailableProperties @auth(level: USER) {
@@ -122,8 +171,9 @@ query ListMyProperties @auth(level: USER) {
     title
     status
     rentPrice
+    areaSqm            
     address
-      myCoverImage: images_on_property(orderBy: [{ displayOrder: ASC }], limit: 1) { imageUrl }
+    myCoverImage: images_on_property(orderBy: [{ displayOrder: ASC }], limit: 1) { imageUrl }
   }
 }
 

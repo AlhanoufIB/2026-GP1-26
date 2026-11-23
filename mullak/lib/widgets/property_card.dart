@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/property_myProperty.dart';
 import '../theme/app_colors.dart';
-import 'property_image.dart';
+import 'property_thumbnail.dart';
 
 class PropertyCard extends StatelessWidget {
-  final property_myProperty property;
+  final PropertySummary property;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -27,7 +27,7 @@ class PropertyCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PropertyImage(path: property.mainImage),
+          PropertyThumbnail(path: property.coverImageUrl),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -45,13 +45,14 @@ class PropertyCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'رقم العقار ${property.id} · ${property.area} م²',
+                  '${property.areaSqm.round()} م² · رقم العقار \u2066${property.shortId}\u2069',
+                  textDirection: TextDirection.rtl,
                   style: const TextStyle(
                       fontSize: 12, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${formatNumber(property.annualRent)} ر.س / سنة',
+                  '${formatNumber(property.rentPrice.round())} ر.س / سنة',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -63,18 +64,16 @@ class PropertyCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _SmallButton(
-                        text: 'تعديل',
-                        color: AppColors.primary,
-                        onPressed: onEdit,
-                      ),
+                          text: 'تعديل',
+                          color: AppColors.primary,
+                          onPressed: onEdit),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: _SmallButton(
-                        text: 'حذف',
-                        color: AppColors.danger,
-                        onPressed: onDelete,
-                      ),
+                          text: 'حذف',
+                          color: AppColors.danger,
+                          onPressed: onDelete),
                     ),
                   ],
                 ),
@@ -108,14 +107,11 @@ class _SmallButton extends StatelessWidget {
           foregroundColor: color,
           padding: EdgeInsets.zero,
           side: BorderSide(color: color),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
+        child: Text(text,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
       ),
     );
   }

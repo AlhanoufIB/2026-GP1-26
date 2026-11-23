@@ -15,9 +15,15 @@ part 'create_review.dart';
 
 part 'create_property.dart';
 
+part 'update_my_property.dart';
+
 part 'update_my_property_status.dart';
 
 part 'add_property_image.dart';
+
+part 'delete_my_property_images.dart';
+
+part 'delete_my_property.dart';
 
 part 'list_available_properties.dart';
 
@@ -86,6 +92,11 @@ class MullakConnector {
   }
   
   
+  UpdateMyPropertyVariablesBuilder updateMyProperty ({required String id, required String title, required String district, required String propertyType, required double areaSqm, required double rentPrice, required double latitude, required double longitude, }) {
+    return UpdateMyPropertyVariablesBuilder(dataConnect, id: id,title: title,district: district,propertyType: propertyType,areaSqm: areaSqm,rentPrice: rentPrice,latitude: latitude,longitude: longitude,);
+  }
+  
+  
   UpdateMyPropertyStatusVariablesBuilder updateMyPropertyStatus ({required String id, required String status, }) {
     return UpdateMyPropertyStatusVariablesBuilder(dataConnect, id: id,status: status,);
   }
@@ -93,6 +104,16 @@ class MullakConnector {
   
   AddPropertyImageVariablesBuilder addPropertyImage ({required String propertyId, required String imageUrl, required int displayOrder, }) {
     return AddPropertyImageVariablesBuilder(dataConnect, propertyId: propertyId,imageUrl: imageUrl,displayOrder: displayOrder,);
+  }
+  
+  
+  DeleteMyPropertyImagesVariablesBuilder deleteMyPropertyImages ({required String propertyId, }) {
+    return DeleteMyPropertyImagesVariablesBuilder(dataConnect, propertyId: propertyId,);
+  }
+  
+  
+  DeleteMyPropertyVariablesBuilder deleteMyProperty ({required String id, }) {
+    return DeleteMyPropertyVariablesBuilder(dataConnect, id: id,);
   }
   
   

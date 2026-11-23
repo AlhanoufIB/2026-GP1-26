@@ -1,7 +1,8 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme/app_colors.dart';
+import 'property_thumbnail.dart';
 
 class ImagePickerSection extends StatelessWidget {
   final List<String> images;
@@ -26,10 +27,7 @@ class ImagePickerSection extends StatelessWidget {
   void _remove(int i) {
     final updated = [...images]..removeAt(i);
     onImagesChanged(updated);
-    // نضبط الرئيسية بعد الحذف
-    if (updated.isEmpty) {
-      onMainChanged(0);
-    } else if (i == mainIndex) {
+    if (updated.isEmpty || i == mainIndex) {
       onMainChanged(0);
     } else if (i < mainIndex) {
       onMainChanged(mainIndex - 1);
@@ -79,14 +77,27 @@ class ImagePickerSection extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isMain ? AppColors.primary : AppColors.border,
+                          color:
+                              isMain ? AppColors.primary : AppColors.border,
                           width: isMain ? 2.5 : 1,
                         ),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image.file(File(images[i]),
-                            fit: BoxFit.cover, width: 84, height: 84),
+                        child: Image(
+                          image: imageProviderFor(images[i]),
+                          fit: BoxFit.cover,
+                          width: 84,
+                          height: 84,
+                          // هنا التعديل الجديد: يطبع سبب فشل الصورة
+                          errorBuilder: (_, e, __) {
+                            debugPrint('THUMB ERROR ${images[i]}: $e');
+                            return const Center(
+                              child: Icon(Icons.broken_image_outlined,
+                                  color: AppColors.textMuted),
+                            );
+                          },
+                        ),
                       ),
                     ),
                     if (isMain)

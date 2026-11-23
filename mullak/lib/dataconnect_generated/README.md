@@ -650,7 +650,11 @@ The builder pattern allows Data Connect to distinguish between fields that haven
 ```dart
 class CreatePropertyVariablesBuilder {
   ...
-   CreatePropertyVariablesBuilder address(String? t) {
+   CreatePropertyVariablesBuilder estimatedPrice(double? t) {
+   _estimatedPrice.value = t;
+   return this;
+  }
+  CreatePropertyVariablesBuilder address(String? t) {
    _address.value = t;
    return this;
   }
@@ -675,6 +679,7 @@ MullakConnector.instance.createProperty(
   latitude: latitude,
   longitude: longitude,
 )
+.estimatedPrice(estimatedPrice)
 .address(address)
 .description(description)
 .hasParking(hasParking)
@@ -723,6 +728,123 @@ final ref = MullakConnector.instance.createProperty(
   title: title,
   district: district,
   city: city,
+  propertyType: propertyType,
+  areaSqm: areaSqm,
+  rentPrice: rentPrice,
+  latitude: latitude,
+  longitude: longitude,
+).ref();
+ref.execute();
+```
+
+
+### UpdateMyProperty
+#### Required Arguments
+```dart
+String id = ...;
+String title = ...;
+String district = ...;
+String propertyType = ...;
+double areaSqm = ...;
+double rentPrice = ...;
+double latitude = ...;
+double longitude = ...;
+MullakConnector.instance.updateMyProperty(
+  id: id,
+  title: title,
+  district: district,
+  propertyType: propertyType,
+  areaSqm: areaSqm,
+  rentPrice: rentPrice,
+  latitude: latitude,
+  longitude: longitude,
+).execute();
+```
+
+#### Optional Arguments
+We return a builder for each query. For UpdateMyProperty, we created `UpdateMyPropertyBuilder`. For queries and mutations with optional parameters, we return a builder class.
+The builder pattern allows Data Connect to distinguish between fields that haven't been set and fields that have been set to null. A field can be set by calling its respective setter method like below:
+```dart
+class UpdateMyPropertyVariablesBuilder {
+  ...
+   UpdateMyPropertyVariablesBuilder estimatedPrice(double? t) {
+   _estimatedPrice.value = t;
+   return this;
+  }
+  UpdateMyPropertyVariablesBuilder address(String? t) {
+   _address.value = t;
+   return this;
+  }
+  UpdateMyPropertyVariablesBuilder description(String? t) {
+   _description.value = t;
+   return this;
+  }
+  UpdateMyPropertyVariablesBuilder hasParking(bool? t) {
+   _hasParking.value = t;
+   return this;
+  }
+
+  ...
+}
+MullakConnector.instance.updateMyProperty(
+  id: id,
+  title: title,
+  district: district,
+  propertyType: propertyType,
+  areaSqm: areaSqm,
+  rentPrice: rentPrice,
+  latitude: latitude,
+  longitude: longitude,
+)
+.estimatedPrice(estimatedPrice)
+.address(address)
+.description(description)
+.hasParking(hasParking)
+.execute();
+```
+
+#### Return Type
+`execute()` returns a `OperationResult<UpdateMyPropertyData, UpdateMyPropertyVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await MullakConnector.instance.updateMyProperty(
+  id: id,
+  title: title,
+  district: district,
+  propertyType: propertyType,
+  areaSqm: areaSqm,
+  rentPrice: rentPrice,
+  latitude: latitude,
+  longitude: longitude,
+);
+UpdateMyPropertyData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String id = ...;
+String title = ...;
+String district = ...;
+String propertyType = ...;
+double areaSqm = ...;
+double rentPrice = ...;
+double latitude = ...;
+double longitude = ...;
+
+final ref = MullakConnector.instance.updateMyProperty(
+  id: id,
+  title: title,
+  district: district,
   propertyType: propertyType,
   areaSqm: areaSqm,
   rentPrice: rentPrice,
@@ -827,6 +949,90 @@ final ref = MullakConnector.instance.addPropertyImage(
   propertyId: propertyId,
   imageUrl: imageUrl,
   displayOrder: displayOrder,
+).ref();
+ref.execute();
+```
+
+
+### DeleteMyPropertyImages
+#### Required Arguments
+```dart
+String propertyId = ...;
+MullakConnector.instance.deleteMyPropertyImages(
+  propertyId: propertyId,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<DeleteMyPropertyImagesData, DeleteMyPropertyImagesVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await MullakConnector.instance.deleteMyPropertyImages(
+  propertyId: propertyId,
+);
+DeleteMyPropertyImagesData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String propertyId = ...;
+
+final ref = MullakConnector.instance.deleteMyPropertyImages(
+  propertyId: propertyId,
+).ref();
+ref.execute();
+```
+
+
+### DeleteMyProperty
+#### Required Arguments
+```dart
+String id = ...;
+MullakConnector.instance.deleteMyProperty(
+  id: id,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<DeleteMyPropertyData, DeleteMyPropertyVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await MullakConnector.instance.deleteMyProperty(
+  id: id,
+);
+DeleteMyPropertyData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String id = ...;
+
+final ref = MullakConnector.instance.deleteMyProperty(
+  id: id,
 ).ref();
 ref.execute();
 ```
