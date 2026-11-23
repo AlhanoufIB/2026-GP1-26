@@ -2,17 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../data/sample_properties.dart';
+import '../../dataconnect_generated/generated.dart';
 import '../../models/property.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_bottom_nav.dart';
-
-
 
 import '../property_discovery/property_details_screen.dart';
 import '../property_discovery/utils/discovery_formatters.dart';
 import '../notifications/notifications_screen.dart';
 
+import 'map_property_service.dart';
 import 'widgets/map_filter_sheet.dart';
 
 class MapScreen extends StatefulWidget {
@@ -25,28 +24,132 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
 
+  final MapPropertyService _mapPropertyService =
+      MapPropertyService();
+
   static const LatLng _riyadhCenter =
       LatLng(24.7500, 46.6700);
 
-  MapFilterSelection _filters =
-      const MapFilterSelection();
+  // Density legend colors.
+  // Actual neighborhood density data will be linked later.
+  static const Color _highDensity = Color(0xFFD95B59);
+  static const Color _mediumDensity = Color(0xFFF0A44A);
+  static const Color _lowDensity = Color(0xFFF0D76C);
 
-  Property? _selectedProperty;
+  MapFilterSelection _filters = const MapFilterSelection();
 
-  // Temporary density colors.
-  static const Color _highDensity =
-      Color(0xFFD95B59);
+  List<ListAvailablePropertiesProperties> _allProperties = [];
 
-  static const Color _mediumDensity =
-      Color(0xFFF0A44A);
+  ListAvailablePropertiesProperties? _selectedProperty;
 
-  static const Color _lowDensity =
-      Color(0xFFF0D76C);
+  bool _isLoading = true;
+  bool _isOpeningDetails = false;
+  String? _loadError;
 
-  List<Property> get _visibleProperties {
-    return sampleProperties
-        .where((property) => _filters.matches(property))
-        .toList();
+  @override
+  void initState() {
+    super.initState();
+    _loadMapProperties();
+  }
+
+  // Fetch real available properties from Firebase.
+  Future<void> _loadMapProperties() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+
+    try {
+      final properties =
+          await _mapPropertyService.getAvailableProperties();
+
+      if (!mounted) return;
+
+      setState(() {
+        _allProperties = properties;
+        _isLoading = false;
+
+        // Keep selection only if the property still exists.
+        if (_selectedProperty != null) {
+          final selectedId = _selectedProperty!.id;
+          _selectedProperty = null;
+
+          for (final property in properties) {
+            if (property.id == selectedId) {
+              _selectedProperty = property;
+              break;
+            }
+          }
+
+          if (_selectedProperty != null &&
+              !_matchesFilters(_selectedProperty!)) {
+            _selectedProperty = null;
+          }
+        }
+      });
+
+      debugPrint(
+        'MAP DATABASE: Loaded ${properties.length} properties',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('MAP DATABASE ERROR: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _loadError = 'تعذّر تحميل العقارات من قاعدة البيانات';
+        _allProperties = [];
+        _selectedProperty = null;
+      });
+    }
+  }
+
+  // Apply selected filters to Firebase query results.
+  bool _matchesFilters(
+    ListAvailablePropertiesProperties property,
+  ) {
+    // Property type filter.
+    if (_filters.propertyType != null &&
+        property.propertyType != _filters.propertyType) {
+      return false;
+    }
+
+    // Dynamic price range.
+    // The default upper bound is infinity, meaning no price limit.
+    final price = _filters.priceRange;
+
+    if (property.rentPrice < price.start ||
+        property.rentPrice > price.end) {
+      return false;
+    }
+
+    // Area filter.
+    switch (_filters.areaRange) {
+      case 'under50':
+        return property.areaSqm < 50;
+
+      case '50to100':
+        return property.areaSqm >= 50 &&
+            property.areaSqm <= 100;
+
+      case '100to200':
+        return property.areaSqm > 100 &&
+            property.areaSqm <= 200;
+
+      case 'over200':
+        return property.areaSqm > 200;
+
+      default:
+        return true;
+    }
+  }
+
+  // Properties matching the currently selected filters.
+  List<ListAvailablePropertiesProperties>
+      get _visibleProperties {
+    return _allProperties.where(_matchesFilters).toList();
   }
 
   String _formatPrice(num value) {
@@ -56,66 +159,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  // Illustrative density effect.
-  List<CircleMarker> _densitySpot(
-    LatLng center,
-    Color color,
-    double radius,
-  ) {
-    return [
-      CircleMarker(
-        point: center,
-        radius: radius,
-        color: color.withValues(alpha: 0.07),
-        borderStrokeWidth: 0,
-      ),
-      CircleMarker(
-        point: center,
-        radius: radius * 0.72,
-        color: color.withValues(alpha: 0.12),
-        borderStrokeWidth: 0,
-      ),
-      CircleMarker(
-        point: center,
-        radius: radius * 0.45,
-        color: color.withValues(alpha: 0.20),
-        borderStrokeWidth: 0,
-      ),
-      CircleMarker(
-        point: center,
-        radius: radius * 0.22,
-        color: color.withValues(alpha: 0.15),
-        borderStrokeWidth: 0,
-      ),
-    ];
-  }
-
-  List<CircleMarker> get _demoDensityCircles {
-    return [
-      ..._densitySpot(
-        const LatLng(24.6936, 46.6853),
-        _highDensity,
-        105,
-      ),
-      ..._densitySpot(
-        const LatLng(24.8070, 46.6100),
-        _mediumDensity,
-        100,
-      ),
-      ..._densitySpot(
-        const LatLng(24.7650, 46.6050),
-        _lowDensity,
-        90,
-      ),
-      ..._densitySpot(
-        const LatLng(24.8550, 46.6700),
-        _lowDensity,
-        85,
-      ),
-    ];
-  }
-
-  // Open map filters.
+  // Open map filters using the complete Firebase property list.
   Future<void> _openFilters() async {
     final result =
         await showModalBottomSheet<MapFilterSelection>(
@@ -128,6 +172,7 @@ class _MapScreenState extends State<MapScreen> {
           heightFactor: 0.76,
           child: MapFilterSheet(
             initialFilters: _filters,
+            availableProperties: _allProperties,
           ),
         );
       },
@@ -150,17 +195,16 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  // Select a property marker.
-  void _selectProperty(Property property) {
+  // Select a real property marker.
+  void _selectProperty(
+    ListAvailablePropertiesProperties property,
+  ) {
     setState(() {
       _selectedProperty = property;
     });
 
     _mapController.move(
-      LatLng(
-        property.latitude,
-        property.longitude,
-      ),
+      LatLng(property.latitude, property.longitude),
       14,
     );
   }
@@ -174,7 +218,57 @@ class _MapScreenState extends State<MapScreen> {
     _mapController.move(_riyadhCenter, 11);
   }
 
-  // Open the existing full property details screen.
+  // Fetch full property data only when requested.
+  Future<void> _showPropertyDetails(
+    ListAvailablePropertiesProperties listing,
+  ) async {
+    if (_isOpeningDetails) return;
+
+    setState(() {
+      _isOpeningDetails = true;
+    });
+
+    try {
+      final property =
+          await _mapPropertyService.getPropertyById(
+        listing.id,
+      );
+
+      if (!mounted) return;
+
+      if (property == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('هذا العقار لم يعد متاحًا'),
+          ),
+        );
+
+        await _loadMapProperties();
+        return;
+      }
+
+      _showPropertyPreview(property);
+    } catch (error, stackTrace) {
+      debugPrint('MAP PROPERTY DETAILS ERROR: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تعذّر تحميل تفاصيل العقار'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isOpeningDetails = false;
+        });
+      }
+    }
+  }
+
+  // Navigate to the existing property details screen.
   void _openFullPropertyDetails(Property property) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -185,8 +279,43 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  // Property preview bottom sheet.
-  void _showPropertyDetails(Property property) {
+  // Display Firebase Storage images.
+  Widget _propertyImage(
+    String? imageUrl, {
+    required double height,
+    double? width,
+  }) {
+    final placeholder = Container(
+      height: height,
+      width: width,
+      color: AppColors.background,
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.storefront_outlined,
+        size: 38,
+        color: AppColors.brown,
+      ),
+    );
+
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return placeholder;
+    }
+
+    return Image.network(
+      imageUrl,
+      height: height,
+      width: width,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => placeholder,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return placeholder;
+      },
+    );
+  }
+
+  // Preview sheet with complete database details.
+  void _showPropertyPreview(Property property) {
     final parking = property.hasParking == null
         ? 'غير محدد'
         : property.hasParking!
@@ -218,28 +347,14 @@ class _MapScreenState extends State<MapScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Property image.
-                  if (property.imageUrls.isNotEmpty)
-                    ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(14),
-                      child: Image.asset(
-                        property.imageUrls.first,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) =>
-                            const SizedBox(
-                          height: 120,
-                          child: Center(
-                            child: Icon(
-                              Icons.storefront_outlined,
-                              size: 55,
-                              color: AppColors.brown,
-                            ),
-                          ),
-                        ),
-                      ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: _propertyImage(
+                      property.coverImage,
+                      height: 180,
+                      width: double.infinity,
                     ),
+                  ),
 
                   const SizedBox(height: 16),
 
@@ -266,6 +381,19 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                   ),
 
+                  // Address, when provided.
+                  if (property.address != null &&
+                      property.address!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      property.address!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.hint,
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 14),
 
                   // Annual rent.
@@ -280,14 +408,12 @@ class _MapScreenState extends State<MapScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Area, type and parking boxes.
+                  // Area, type and parking.
                   Row(
                     children: [
                       Expanded(
                         child: _infoBox(
-                          value: formatArea(
-                            property.areaSqm,
-                          ),
+                          value: formatArea(property.areaSqm),
                           label: 'المساحة',
                         ),
                       ),
@@ -323,8 +449,7 @@ class _MapScreenState extends State<MapScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: AppColors.border,
                       ),
@@ -345,8 +470,12 @@ class _MapScreenState extends State<MapScreen> {
                         const SizedBox(height: 8),
 
                         Text(
-                          property.description ??
-                              'لا يوجد وصف',
+                          property.description
+                                      ?.trim()
+                                      .isNotEmpty ==
+                                  true
+                              ? property.description!
+                              : 'لا يوجد وصف',
                           style: const TextStyle(
                             fontSize: 13,
                             height: 1.7,
@@ -359,17 +488,14 @@ class _MapScreenState extends State<MapScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Open full property details.
+                  // Full property details button.
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.of(sheetContext).pop();
-
-                        _openFullPropertyDetails(
-                          property,
-                        );
+                        _openFullPropertyDetails(property);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.brown,
@@ -409,7 +535,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  // Small information box.
+  // Information box.
   Widget _infoBox({
     required String value,
     required String label,
@@ -456,64 +582,68 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Density legend.
+  // Display only: no density colors are applied to markers yet.
   Widget _densityLegend() {
+    Widget legendItem(Color color, String label) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.brownDark,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 9,
+        horizontal: 14,
+        vertical: 12,
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.93),
+        color: Colors.white.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(
             color: Colors.black12,
-            blurRadius: 5,
+            blurRadius: 8,
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _legendRow('كثافة عالية', _highDensity),
-          const SizedBox(height: 6),
-          _legendRow('كثافة متوسطة', _mediumDensity),
-          const SizedBox(height: 6),
-          _legendRow('كثافة منخفضة', _lowDensity),
+         
+
+          legendItem(_highDensity, 'كثافة عالية'),
+
+          const SizedBox(height: 8),
+
+          legendItem(_mediumDensity, 'كثافة متوسطة'),
+
+          const SizedBox(height: 8),
+
+          legendItem(_lowDensity, 'كثافة منخفضة'),
         ],
       ),
     );
   }
 
-  Widget _legendRow(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColors.brownDark,
-          ),
-        ),
-
-        const SizedBox(width: 7),
-
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Notification button with dynamic unread indicator.
+  // Notification button.
   Widget _notificationButton() {
     return ValueListenableBuilder<Set<int>>(
       valueListenable: NotificationsScreen.unreadIds,
@@ -537,7 +667,6 @@ class _MapScreenState extends State<MapScreen> {
                     size: 26,
                   ),
 
-                  // Only visible when unread notifications exist.
                   if (unread.isNotEmpty)
                     Positioned(
                       top: 8,
@@ -561,10 +690,12 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Property marker.
-  Widget _propertyMarker(Property property) {
+  // Density-based marker coloring will be added later.
+  Widget _propertyMarker(
+    ListAvailablePropertiesProperties property,
+  ) {
     final selected =
-        _selectedProperty?.propertyId ==
-            property.propertyId;
+        _selectedProperty?.id == property.id;
 
     return GestureDetector(
       onTap: () => _selectProperty(property),
@@ -594,8 +725,14 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  // Small property card displayed on the map.
-  Widget _propertyCard(Property property) {
+  // Small property card on the map.
+  Widget _propertyCard(
+    ListAvailablePropertiesProperties property,
+  ) {
+    final imageUrl = property.coverImage.isEmpty
+        ? null
+        : property.coverImage.first.imageUrl;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -653,41 +790,52 @@ class _MapScreenState extends State<MapScreen> {
 
                 const SizedBox(height: 7),
 
-                // Details link with underline and arrow.
+                // Fetch full details when tapped.
                 InkWell(
-                  onTap: () =>
-                      _showPropertyDetails(property),
+                  onTap: _isOpeningDetails
+                      ? null
+                      : () => _showPropertyDetails(property),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.only(
-                          bottom: 2,
-                        ),
-                        decoration: const BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
+                      if (_isOpeningDetails)
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      else ...[
+                        Container(
+                          padding: const EdgeInsets.only(
+                            bottom: 2,
+                          ),
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: AppColors.brown,
+                                width: 0.8,
+                              ),
+                            ),
+                          ),
+                          child: const Text(
+                            'التفاصيل',
+                            style: TextStyle(
+                              fontSize: 12,
                               color: AppColors.brown,
-                              width: 0.8,
                             ),
                           ),
                         ),
-                        child: const Text(
-                          'التفاصيل',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.brown,
-                          ),
+
+                        const SizedBox(width: 3),
+
+                        const Icon(
+                          Icons.chevron_left,
+                          size: 15,
+                          color: AppColors.brown,
                         ),
-                      ),
-
-                      const SizedBox(width: 3),
-
-                      const Icon(
-                        Icons.chevron_left,
-                        size: 15,
-                        color: AppColors.brown,
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -697,25 +845,15 @@ class _MapScreenState extends State<MapScreen> {
 
           const SizedBox(width: 10),
 
-          if (property.imageUrls.isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                property.imageUrls.first,
-                width: 90,
-                height: 100,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    const SizedBox(
-                  width: 90,
-                  height: 100,
-                  child: Icon(
-                    Icons.storefront_outlined,
-                    color: AppColors.brown,
-                  ),
-                ),
-              ),
+          // Firebase image or placeholder.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: _propertyImage(
+              imageUrl,
+              width: 90,
+              height: 100,
             ),
+          ),
 
           IconButton(
             visualDensity: VisualDensity.compact,
@@ -730,6 +868,47 @@ class _MapScreenState extends State<MapScreen> {
               color: AppColors.hint,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // Loading, error and empty-state message.
+  Widget _messagePanel(
+    String message, {
+    VoidCallback? onRetry,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.brownDark,
+            ),
+          ),
+
+          if (onRetry != null) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
+            ),
+          ],
         ],
       ),
     );
@@ -766,12 +945,8 @@ class _MapScreenState extends State<MapScreen> {
                       'sa.edu.ksu.mullak',
                 ),
 
-                // Density overlay.
-                CircleLayer(
-                  circles: _demoDensityCircles,
-                ),
-
-                // Property markers.
+                // Real Firebase property markers.
+                // No density circles or colors are added here.
                 MarkerLayer(
                   markers: properties.map((property) {
                     return Marker(
@@ -796,21 +971,22 @@ class _MapScreenState extends State<MapScreen> {
               ],
             ),
 
-            // Top-left notifications icon.
+            // Notifications.
             Positioned(
               top: 16,
               left: 12,
               child: _notificationButton(),
             ),
 
-            // Density legend below notifications.
+            // Density legend.
+            // Actual density data will be connected later.
             Positioned(
               top: 80,
               left: 12,
               child: _densityLegend(),
             ),
 
-            // Top-right filter icon.
+            // Filters.
             Positioned(
               top: 16,
               right: 16,
@@ -836,7 +1012,7 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
 
-            // Recenter map button.
+            // Recenter map.
             Positioned(
               right: 16,
               top: 80,
@@ -846,6 +1022,7 @@ class _MapScreenState extends State<MapScreen> {
                 borderRadius:
                     BorderRadius.circular(12),
                 child: IconButton(
+                  tooltip: 'العودة لوسط الرياض',
                   onPressed: _resetMap,
                   icon: const Icon(
                     Icons.my_location,
@@ -855,8 +1032,31 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
 
+            // Refresh properties.
+            Positioned(
+              right: 16,
+              top: 136,
+              child: Material(
+                color: Colors.white,
+                elevation: 2,
+                borderRadius:
+                    BorderRadius.circular(12),
+                child: IconButton(
+                  tooltip: 'تحديث العقارات',
+                  onPressed:
+                      _isLoading ? null : _loadMapProperties,
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: AppColors.brown,
+                  ),
+                ),
+              ),
+            ),
+
             // Selected property card.
-            if (_selectedProperty != null)
+            if (_selectedProperty != null &&
+                !_isLoading &&
+                _loadError == null)
               Positioned(
                 left: 12,
                 right: 12,
@@ -866,26 +1066,39 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
 
-            // Empty filter result.
-            if (properties.isEmpty)
+            // Loading state.
+            if (_isLoading)
               Positioned(
                 left: 16,
                 right: 16,
                 bottom: 18,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius:
-                        BorderRadius.circular(14),
-                  ),
-                  child: const Text(
-                    'لا توجد عقارات مطابقة للتصفية',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.brownDark,
-                    ),
-                  ),
+                child: _messagePanel(
+                  'جاري تحميل العقارات...',
+                ),
+              )
+
+            // Database error.
+            else if (_loadError != null)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 18,
+                child: _messagePanel(
+                  _loadError!,
+                  onRetry: _loadMapProperties,
+                ),
+              )
+
+            // No properties or no filter matches.
+            else if (properties.isEmpty)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 18,
+                child: _messagePanel(
+                  _allProperties.isEmpty
+                      ? 'لا توجد عقارات متاحة حاليًا'
+                      : 'لا توجد عقارات مطابقة للتصفية',
                 ),
               ),
           ],
@@ -893,8 +1106,8 @@ class _MapScreenState extends State<MapScreen> {
       ),
 
       bottomNavigationBar: const AppBottomNav(
-  current: AppTab.map,
-),
+        current: AppTab.map,
+      ),
     );
   }
 }

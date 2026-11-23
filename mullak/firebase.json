@@ -29,5 +29,8 @@
   },
   "dataconnect": {
     "source": "dataconnect"
-  }
+  },
+  "firestore": {
+  "rules": "firestore.rules"
+}
 }

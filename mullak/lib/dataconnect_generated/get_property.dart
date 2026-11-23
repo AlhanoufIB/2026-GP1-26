@@ -32,6 +32,7 @@ class GetPropertyProperty {
   final double? estimatedPrice;
   final String? address;
   final String? description;
+  final bool? hasParking;
   final GetPropertyPropertyOwner owner;
   final List<GetPropertyPropertyImages> images;
   GetPropertyProperty.fromJson(dynamic json):
@@ -49,6 +50,7 @@ class GetPropertyProperty {
   estimatedPrice = json['estimatedPrice'] == null ? null : nativeFromJson<double>(json['estimatedPrice']),
   address = json['address'] == null ? null : nativeFromJson<String>(json['address']),
   description = json['description'] == null ? null : nativeFromJson<String>(json['description']),
+  hasParking = json['hasParking'] == null ? null : nativeFromJson<bool>(json['hasParking']),
   owner = GetPropertyPropertyOwner.fromJson(json['owner']),
   images = (json['images'] as List<dynamic>)
         .map((e) => GetPropertyPropertyImages.fromJson(e))
@@ -76,12 +78,13 @@ class GetPropertyProperty {
     estimatedPrice == otherTyped.estimatedPrice && 
     address == otherTyped.address && 
     description == otherTyped.description && 
+    hasParking == otherTyped.hasParking && 
     owner == otherTyped.owner && 
     images == otherTyped.images;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, district.hashCode, city.hashCode, propertyType.hashCode, areaSqm.hashCode, rentPrice.hashCode, status.hashCode, latitude.hashCode, longitude.hashCode, estimatedPrice.hashCode, address.hashCode, description.hashCode, owner.hashCode, images.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, district.hashCode, city.hashCode, propertyType.hashCode, areaSqm.hashCode, rentPrice.hashCode, status.hashCode, latitude.hashCode, longitude.hashCode, estimatedPrice.hashCode, address.hashCode, description.hashCode, hasParking.hashCode, owner.hashCode, images.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -105,6 +108,9 @@ class GetPropertyProperty {
     if (description != null) {
       json['description'] = nativeToJson<String?>(description);
     }
+    if (hasParking != null) {
+      json['hasParking'] = nativeToJson<bool?>(hasParking);
+    }
     json['owner'] = owner.toJson();
     json['images'] = images.map((e) => e.toJson()).toList();
     return json;
@@ -124,6 +130,7 @@ class GetPropertyProperty {
     this.estimatedPrice,
     this.address,
     this.description,
+    this.hasParking,
     required this.owner,
     required this.images,
   });

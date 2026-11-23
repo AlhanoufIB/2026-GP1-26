@@ -6,16 +6,15 @@ import '../../widgets/primary_button.dart';
 import 'utils/discovery_formatters.dart';
 import 'widgets/property_gallery.dart';
 import '../../repositories/saved_properties_repository.dart';
-import '../../repositories/chat_repository.dart';
-import '../chat/chat_details_screen.dart';
+import '../../services/chat_launcher.dart';
 
 /// "تفاصيل العقار"
 /// Two versions from the design:
-///  - opened from Explore          -> matchScore is null (no badge)
-///  - opened from Recommendations  -> matchScore is set  (green badge)
+/// - Opened from Explore: matchScore is null.
+/// - Opened from Recommendations: matchScore is set.
 class PropertyDetailsScreen extends StatelessWidget {
   final Property property;
-  final int? matchScore; // 0-100, only when coming from recommendations
+  final int? matchScore;
 
   const PropertyDetailsScreen({
     super.key,
@@ -23,21 +22,11 @@ class PropertyDetailsScreen extends StatelessWidget {
     this.matchScore,
   });
 
-  /// Open an existing conversation or create a new one.
-  void _openOwnerChat(BuildContext context) {
-    final repository = ChatRepository.instance;
-
-    final conversation =
-        repository.getOrCreateConversation(property);
-
-    repository.markAsRead(conversation);
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatDetailsScreen(
-          conversation: conversation,
-        ),
-      ),
+  /// Open or create a real-time Firestore chat.
+  Future<void> _openOwnerChat(BuildContext context) async {
+    await ChatLauncher.openFromProperty(
+      context: context,
+      property: property,
     );
   }
 
@@ -71,7 +60,7 @@ class PropertyDetailsScreen extends StatelessWidget {
     );
   }
 
-  /// 1) Full-width photo with "رجوع" on top (Stack = position: absolute)
+  /// 1) Full-width photo with back button.
   Widget _buildPhoto(BuildContext context) {
     return SizedBox(
       height: 345,
@@ -79,7 +68,9 @@ class PropertyDetailsScreen extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: PropertyGallery(images: property.imageUrls),
+            child: PropertyGallery(
+              images: property.imageUrls,
+            ),
           ),
           Positioned(
             top: 48,
@@ -88,7 +79,11 @@ class PropertyDetailsScreen extends StatelessWidget {
               onTap: () => Navigator.of(context).pop(),
               child: const Row(
                 children: [
-                  Icon(Icons.arrow_back, color: Colors.white, size: 18),
+                  Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     'رجوع',
@@ -112,7 +107,7 @@ class PropertyDetailsScreen extends StatelessWidget {
     );
   }
 
-  /// 2) Title + "الرياض · العليا · رقم العقار 10482"
+  /// 2) Property title and location.
   Widget _buildTitle() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,7 +132,7 @@ class PropertyDetailsScreen extends StatelessWidget {
     );
   }
 
-  /// 3) Price on the right, match badge on the left (only if matchScore)
+  /// 3) Price and optional match score.
   Widget _buildPriceRow() {
     return Row(
       children: [
@@ -174,11 +169,13 @@ class PropertyDetailsScreen extends StatelessWidget {
     );
   }
 
-  /// 4) Three boxes: area, type, parking
+  /// 4) Area, type and parking.
   Widget _buildInfoBoxes() {
     final parking = property.hasParking == null
         ? 'غير محدد'
-        : (property.hasParking! ? 'متوفرة' : 'غير متوفرة');
+        : (property.hasParking!
+            ? 'متوفرة'
+            : 'غير متوفرة');
 
     return Row(
       children: [
@@ -206,16 +203,20 @@ class PropertyDetailsScreen extends StatelessWidget {
     );
   }
 
-  /// 5) White "وصف العقار" card
+  /// 5) Property description.
   Widget _buildDescription() {
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 150),
+      constraints: const BoxConstraints(
+        minHeight: 150,
+      ),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: AppColors.border,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,28 +243,34 @@ class PropertyDetailsScreen extends StatelessWidget {
     );
   }
 
-  /// 6) Bottom bar: "حفظ" (right) and "محادثة المالك" (left)
+  /// 6) Save property and contact owner.
   Widget _buildBottomButtons(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.background,
         border: Border(
-          top: BorderSide(color: AppColors.border),
+          top: BorderSide(
+            color: AppColors.border,
+          ),
         ),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+          padding: const EdgeInsets.fromLTRB(
+            20, 14, 20, 14,
+          ),
           child: Row(
             children: [
               Expanded(
                 flex: 2,
                 child: ListenableBuilder(
-                  listenable: SavedPropertiesRepository.instance,
+                  listenable:
+                      SavedPropertiesRepository.instance,
                   builder: (context, _) {
                     final saved =
-                        SavedPropertiesRepository.instance.isSaved(
+                        SavedPropertiesRepository.instance
+                            .isSaved(
                       property.propertyId,
                     );
 
@@ -271,7 +278,8 @@ class PropertyDetailsScreen extends StatelessWidget {
                       height: 54,
                       child: OutlinedButton.icon(
                         onPressed: () =>
-                            SavedPropertiesRepository.instance.toggle(
+                            SavedPropertiesRepository.instance
+                                .toggle(
                           property.propertyId,
                         ),
                         icon: Icon(
@@ -295,7 +303,8 @@ class PropertyDetailsScreen extends StatelessWidget {
                             width: 1.2,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius:
+                                BorderRadius.circular(16),
                           ),
                         ),
                       ),
@@ -319,7 +328,7 @@ class PropertyDetailsScreen extends StatelessWidget {
   }
 }
 
-/// One small info box (value on top, label under it)
+/// Reusable property information box.
 class _InfoBox extends StatelessWidget {
   final String value;
   final String label;
@@ -339,7 +348,9 @@ class _InfoBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: AppColors.border,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

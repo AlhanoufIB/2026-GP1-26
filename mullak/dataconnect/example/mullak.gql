@@ -140,6 +140,7 @@ query GetProperty($id: UUID!) @auth(level: USER) {
     estimatedPrice
     address
     description
+    hasParking
     owner { id fullName }
     images: images_on_property(orderBy: [{ displayOrder: ASC }]) { imageUrl displayOrder }
   }
