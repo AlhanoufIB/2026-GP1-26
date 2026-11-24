@@ -49,7 +49,7 @@ class DiscoveryPropertyCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${formatArea(property.areaSqm)} · رقم العقار ${property.propertyId}',
+                    formatArea(property.areaSqm),
                     style: const TextStyle(fontSize: 14, color: AppColors.hint),
                   ),
                   const SizedBox(height: 4),
