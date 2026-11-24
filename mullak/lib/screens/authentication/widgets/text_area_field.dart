@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_colors.dart';
+import 'field_label.dart';
 
 /// A label above a big multi-line text box (details / experience).
 class TextAreaField extends StatelessWidget {
@@ -11,12 +12,16 @@ class TextAreaField extends StatelessWidget {
   /// How many lines tall the box is.
   final int lines;
 
+  /// Shows a red * next to the label.
+  final bool isRequired;
+
   const TextAreaField({
     super.key,
     required this.label,
     required this.hint,
     required this.controller,
     this.lines = 4,
+    this.isRequired = false,
   });
 
   OutlineInputBorder _border(Color color, {double width = 1.2}) =>
@@ -30,14 +35,7 @@ class TextAreaField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: AppColors.brownDark,
-          ),
-        ),
+        FieldLabel(label, isRequired: isRequired),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -62,4 +60,4 @@ class TextAreaField extends StatelessWidget {
       ],
     );
   }
-}
+}

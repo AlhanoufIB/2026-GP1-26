@@ -140,6 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 26),
 
                         LabeledField(
+                          isRequired: true,
                           label: 'رقم الجوال',
                           hint: '+966 5X XXX XXXX',
                           controller: _phoneCtrl,
@@ -149,6 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 14),
                         LabeledField(
+                          isRequired: true,
                           label: 'كلمة المرور',
                           hint: 'كلمة المرور',
                           controller: _passCtrl,

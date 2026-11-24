@@ -7,6 +7,7 @@ import 'feedback_service.dart';
 import 'widgets/back_link.dart';
 import 'widgets/primary_button.dart';
 import 'widgets/text_area_field.dart';
+import 'widgets/field_label.dart';
 
 /// "الإبلاغ عن مشكلة"
 class ReportProblemScreen extends StatefulWidget {
@@ -106,14 +107,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                       style: TextStyle(fontSize: 12.5, color: AppColors.hint),
                     ),
                     const SizedBox(height: 22),
-                    const Text(
-                      'ما نوع المشكلة؟',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.brownDark,
-                      ),
-                    ),
+                    const FieldLabel('ما نوع المشكلة؟', isRequired: true),
                     const SizedBox(height: 10),
                     for (var i = 0; i < _types.length; i++) ...[
                       if (i > 0) const SizedBox(height: 9),
@@ -126,6 +120,8 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                     const SizedBox(height: 26),
                     TextAreaField(
                       label: 'التفاصيل',
+                      // required only when "other" is chosen
+                      isRequired: _selected == _types.length - 1,
                       hint: 'اشرح المشكلة',
                       controller: _detailsCtrl,
                       lines: 4,

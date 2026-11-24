@@ -121,6 +121,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         const SizedBox(height: 22),
 
                         LabeledField(
+                          isRequired: true,
                           label: 'الاسم الكامل',
                           hint: 'اكتب اسمك الكامل',
                           controller: _nameCtrl,
@@ -130,6 +131,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 14),
                         LabeledField(
+                          isRequired: true,
                           label: 'رقم الجوال',
                           hint: '+966 5X XXX XXXX',
                           controller: _phoneCtrl,
@@ -139,6 +141,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 14),
                         LabeledField(
+                          isRequired: true,
                           label: 'كلمة المرور',
                           hint: '٨ خانات على الأقل',
                           controller: _passCtrl,
@@ -147,6 +150,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 14),
                         LabeledField(
+                          isRequired: true,
                           label: 'تأكيد كلمة المرور',
                           hint: 'أعد كتابة كلمة المرور',
                           controller: _confirmCtrl,

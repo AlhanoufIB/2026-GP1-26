@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_colors.dart';
+import 'field_label.dart';
 
 /// A label above a rounded text field (e.g. "رقم الجوال").
 class LabeledField extends StatefulWidget {
@@ -12,6 +13,7 @@ class LabeledField extends StatefulWidget {
   final TextInputType keyboardType;
   final TextInputAction textInputAction;
   final String? Function(String?)? validator;
+  final bool isRequired; // shows a red * next to the label
 
   const LabeledField({
     super.key,
@@ -23,6 +25,7 @@ class LabeledField extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.textInputAction = TextInputAction.next,
     this.validator,
+    this.isRequired = false,
   });
 
   @override
@@ -43,14 +46,7 @@ class _LabeledFieldState extends State<LabeledField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start, // = right side in RTL
       children: [
-        Text(
-          widget.label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: AppColors.brownDark,
-          ),
-        ),
+        FieldLabel(widget.label, isRequired: widget.isRequired),
         const SizedBox(height: 8),
         TextFormField(
           controller: widget.controller,
@@ -100,4 +96,4 @@ class _LabeledFieldState extends State<LabeledField> {
       ],
     );
   }
-}
+}

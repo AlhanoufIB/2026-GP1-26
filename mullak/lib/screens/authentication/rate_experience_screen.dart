@@ -7,6 +7,7 @@ import 'feedback_service.dart';
 import 'widgets/back_link.dart';
 import 'widgets/primary_button.dart';
 import 'widgets/text_area_field.dart';
+import 'widgets/field_label.dart';
 
 /// "كتابة تقييم"
 class RateExperienceScreen extends StatefulWidget {
@@ -94,14 +95,7 @@ class _RateExperienceScreenState extends State<RateExperienceScreen> {
                       style: TextStyle(fontSize: 12.5, color: AppColors.hint),
                     ),
                     const SizedBox(height: 22),
-                    const Text(
-                      'تقييمك',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.brownDark,
-                      ),
-                    ),
+                    const FieldLabel('تقييمك', isRequired: true),
                     const SizedBox(height: 10),
 
                     // Stars: the first star is on the right.
