@@ -111,17 +111,6 @@ Planned for Release 2:
    flutter test
    ```
 
-### Database (optional)
-
-The PostgreSQL schema and queries are in `mullak/dataconnect/`. To regenerate the Dart SDK after changing the schema or queries:
-```bash
-firebase dataconnect:sdk:generate
-```
-To deploy the schema, queries, and Firestore rules (team members with project access only):
-```bash
-firebase deploy --only dataconnect,firestore
-```
-
 ---
 
 ## Data sources
