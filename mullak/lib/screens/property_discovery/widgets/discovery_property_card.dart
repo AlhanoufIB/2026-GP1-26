@@ -6,7 +6,7 @@ import '../utils/discovery_formatters.dart';
 import 'property_image.dart';
 
 /// The big property card on the Explore page:
-/// photo on top, then title, "85 م² · رقم العقار 10482", then the rent.
+/// photo on top, then title, "85 م² · ", then the rent.
 class DiscoveryPropertyCard extends StatelessWidget {
   final Property property;
   final VoidCallback? onTap;
