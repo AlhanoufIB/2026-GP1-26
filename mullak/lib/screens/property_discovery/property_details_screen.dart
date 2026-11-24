@@ -73,23 +73,22 @@ class PropertyDetailsScreen extends StatelessWidget {
         children: [
           Positioned.fill(child: PropertyGallery(images: property.imageUrls)),
           Positioned(
-            top: 48,
-            right: 20,
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: const Row(
-                children: [
-                  Icon(Icons.arrow_back, color: Colors.white, size: 18),
-                  SizedBox(width: 4),
-                  Text(
-                    'رجوع',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      shadows: [Shadow(blurRadius: 6, color: Colors.black45)],
-                    ),
-                  ),
-                ],
+            // below the phone's status bar, whatever the phone
+            top: MediaQuery.of(context).padding.top + 10,
+            right: 16,
+            child: Material(
+              color: Colors.black.withValues(
+                alpha: 0.45,
+              ), // dark see-through circle
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.of(context).pop(),
+                child: const SizedBox(
+                  width: 48, // 48×48 = recommended minimum tap size
+                  height: 48,
+                  child: Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                ),
               ),
             ),
           ),
@@ -225,7 +224,7 @@ class PropertyDetailsScreen extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        bottom:false,
+        bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
           child: Row(

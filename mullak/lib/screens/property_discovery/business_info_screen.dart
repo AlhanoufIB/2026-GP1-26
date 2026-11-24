@@ -8,7 +8,6 @@ import '../../widgets/primary_button.dart';
 import 'recommendations_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
 
-
 /// TEMPORARY until real auth: the logged-in business owner's id.
 const String kCurrentBusinessOwnerId = 'business_owner_1';
 
@@ -47,8 +46,9 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
 
   /// If the owner filled the form before, show their previous answers.
   Future<void> _prefillFromLastTime() async {
-    final last = await BusinessRequirementRepository.instance
-        .getLatest(kCurrentBusinessOwnerId);
+    final last = await BusinessRequirementRepository.instance.getLatest(
+      kCurrentBusinessOwnerId,
+    );
     if (last == null || !mounted) return;
     _typeController.text = last.businessType;
     _locationController.text = last.preferredLocation ?? '';
@@ -115,8 +115,9 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(
-            content: Text('تعذّر حفظ المتطلبات، حاول مرة أخرى')));
+        ..showSnackBar(
+          const SnackBar(content: Text('تعذّر حفظ المتطلبات، حاول مرة أخرى')),
+        );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -140,7 +141,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
               _buildHeader(),
               const SizedBox(height: 24),
               LabeledField(
-                label: '*نوع النشاط',
+                label: 'نوع النشاط *',
                 hint: 'مثال: مقهى',
                 controller: _typeController,
                 validator: _validateRequiredText,
@@ -157,7 +158,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
                 children: [
                   Expanded(
                     child: LabeledField(
-                      label: '*الميزانية السنوية (ر.س)',
+                      label: 'الميزانية السنوية (ر.س)*',
                       hint: 'الحد الأعلى',
                       controller: _budgetController,
                       keyboardType: TextInputType.number,
@@ -168,7 +169,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
                   const SizedBox(width: 14),
                   Expanded(
                     child: LabeledField(
-                      label: '*المساحة المطلوبة (م²)',
+                      label: 'المساحة المطلوبة (م²)*',
                       hint: 'الحد الأدنى',
                       controller: _spaceController,
                       keyboardType: TextInputType.number,
@@ -190,7 +191,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
           ),
         ),
       ),
-          bottomNavigationBar: Column(
+      bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
@@ -218,9 +219,13 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
             children: [
               Icon(Icons.arrow_back, color: AppColors.brown, size: 18),
               SizedBox(width: 4),
-              Text('رجوع',
-                  style: TextStyle(
-                      color: AppColors.brown, fontWeight: FontWeight.w700)),
+              Text(
+                'رجوع',
+                style: TextStyle(
+                  color: AppColors.brown,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
         ),
@@ -228,14 +233,20 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
         const Text(
           'أخبرنا عن نشاطك التجاري',
           style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: AppColors.brownDark),
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: AppColors.brownDark,
+          ),
         ),
         const SizedBox(height: 6),
         const Text(
           'نرتّب لك العقارات حسب مدى ملاءمتها لمتطلباتك.',
           style: TextStyle(fontSize: 14, color: AppColors.hint),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          '* حقول مطلوبة',
+          style: TextStyle(fontSize: 12, color: AppColors.error),
         ),
       ],
     );
