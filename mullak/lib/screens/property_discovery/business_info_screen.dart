@@ -6,6 +6,8 @@ import '../../theme/app_colors.dart';
 import '../../widgets/labeled_field.dart';
 import '../../widgets/primary_button.dart';
 import 'recommendations_screen.dart';
+import '../../widgets/app_bottom_nav.dart';
+
 
 /// TEMPORARY until real auth: the logged-in business owner's id.
 const String kCurrentBusinessOwnerId = 'business_owner_1';
@@ -138,7 +140,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
               _buildHeader(),
               const SizedBox(height: 24),
               LabeledField(
-                label: 'نوع النشاط',
+                label: '*نوع النشاط',
                 hint: 'مثال: مقهى',
                 controller: _typeController,
                 validator: _validateRequiredText,
@@ -155,7 +157,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
                 children: [
                   Expanded(
                     child: LabeledField(
-                      label: 'الميزانية السنوية (ر.س)',
+                      label: '*الميزانية السنوية (ر.س)',
                       hint: 'الحد الأعلى',
                       controller: _budgetController,
                       keyboardType: TextInputType.number,
@@ -166,7 +168,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
                   const SizedBox(width: 14),
                   Expanded(
                     child: LabeledField(
-                      label: 'المساحة المطلوبة (م²)',
+                      label: '*المساحة المطلوبة (م²)',
                       hint: 'الحد الأدنى',
                       controller: _spaceController,
                       keyboardType: TextInputType.number,
@@ -188,16 +190,19 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
-          child: PrimaryButton(
-            text: 'عرض الترشيحات',
-            loading: _saving,
-            onPressed: _submit,
+          bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
+            child: PrimaryButton(
+              text: 'عرض الترشيحات',
+              loading: _saving,
+              onPressed: _submit,
+            ),
           ),
-        ),
+          const AppBottomNav(current: AppTab.explore),
+        ],
       ),
     );
   }

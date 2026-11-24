@@ -1,12 +1,15 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../dataconnect_generated/generated.dart';
 import '../models/business_requirement.dart';
 
-/// Saves and reads the business owner's requirements.
-/// Same idea as PropertyRepository: swap for Firestore in sprint 5.
+/// Saves and reads the business owner's requirements
+/// (BUSINESS_REQUIREMENT table in the database).
 abstract class BusinessRequirementRepository {
   static BusinessRequirementRepository instance =
-      LocalBusinessRequirementRepository();
+      DataConnectBusinessRequirementRepository();
 
-  /// Saves a new requirement and returns it with its generated id.
+  /// Saves a new requirement and returns it with its database id.
   Future<BusinessRequirement> save({
     required String businessOwnerId,
     required String businessType,
@@ -16,15 +19,19 @@ abstract class BusinessRequirementRepository {
     String? otherRequirements,
   });
 
-  /// The most recent requirement of this owner, or null if none yet.
+  /// The most recent requirement saved in this session, or null.
   Future<BusinessRequirement?> getLatest(String businessOwnerId);
 }
 
-/// TEMPORARY: keeps requirements in memory.
-class LocalBusinessRequirementRepository
+/// Real database version (Firebase Data Connect).
+class DataConnectBusinessRequirementRepository
     implements BusinessRequirementRepository {
-  final List<BusinessRequirement> _all = [];
-  int _nextId = 1;
+  final MullakConnector _db = MullakConnector.instance;
+
+  /// Kept to pre-fill the form when the user comes back to it.
+  /// (The table has no date column in the ER, so the database
+  /// can't tell which requirement is the latest.)
+  BusinessRequirement? _lastSaved;
 
   @override
   Future<BusinessRequirement> save({
@@ -35,25 +42,41 @@ class LocalBusinessRequirementRepository
     String? preferredLocation,
     String? otherRequirements,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
+        // same answers as last time? reuse it instead of a new row
+    final last = _lastSaved;
+    if (last != null &&
+        last.businessType == businessType &&
+        last.budget == budget &&
+        last.requiredSpace == requiredSpace &&
+        last.preferredLocation == preferredLocation) {
+      return last;
+    }
+    final result = await _db
+        .createBusinessRequirement(
+          businessType: businessType,
+          budget: budget,
+          requiredSpace: requiredSpace,
+        )
+        .preferredLocation(preferredLocation) // optional
+        .execute();
+
     final requirement = BusinessRequirement(
-      requirementId: 'req_${_nextId++}',
-      businessOwnerId: businessOwnerId,
+      // the id the database just created for this row
+      requirementId: result.data.businessRequirement_insert.id,
+      // the database stores the signed-in user (auth.uid) as the owner
+      businessOwnerId:
+          FirebaseAuth.instance.currentUser?.uid ?? businessOwnerId,
       businessType: businessType,
       budget: budget,
       requiredSpace: requiredSpace,
       preferredLocation: preferredLocation,
-      otherRequirements: otherRequirements,
+      otherRequirements: otherRequirements, // not in the ER -> not stored
     );
-    _all.add(requirement);
+    _lastSaved = requirement;
     return requirement;
   }
 
   @override
-  Future<BusinessRequirement?> getLatest(String businessOwnerId) async {
-    for (final r in _all.reversed) {
-      if (r.businessOwnerId == businessOwnerId) return r;
-    }
-    return null;
-  }
+  Future<BusinessRequirement?> getLatest(String businessOwnerId) async =>
+      _lastSaved;
 }

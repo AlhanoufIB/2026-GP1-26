@@ -9,6 +9,8 @@ import 'property_details_screen.dart';
 import 'utils/discovery_formatters.dart';
 import 'widgets/property_image.dart';
 import 'compare_properties_screen.dart';
+import '../../widgets/app_bottom_nav.dart';
+
 
 /// "العقارات المحفوظة" — saved list + pick 2 to 4 properties to compare.
 class SavedPropertiesScreen extends StatefulWidget {
@@ -30,6 +32,7 @@ class _SavedPropertiesScreenState extends State<SavedPropertiesScreen> {
     super.initState();
     _load();
     _saved.addListener(_load); // reload whenever something is (un)saved
+    _saved.refresh(); // load the saved list from the database
   }
 
   @override

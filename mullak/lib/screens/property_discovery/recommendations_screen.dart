@@ -7,6 +7,8 @@ import '../../services/recommendation_service.dart';
 import '../../theme/app_colors.dart';
 import 'property_details_screen.dart';
 import 'utils/discovery_formatters.dart';
+import '../../widgets/app_bottom_nav.dart';
+
 
 /// "أنسب العقارات لنشاطك" — ranked recommendations with reasons.
 ///
@@ -57,6 +59,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
           },
         ),
       ),
+    bottomNavigationBar: const AppBottomNav(current: AppTab.explore),
     );
   }
 

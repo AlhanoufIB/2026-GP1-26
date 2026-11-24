@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/property.dart';
 import '../../repositories/property_repository.dart';
+import '../../repositories/saved_properties_repository.dart';
 import '../../theme/app_colors.dart';
 import 'utils/explore_filter.dart';
 import 'widgets/discovery_property_card.dart';
@@ -34,6 +35,8 @@ class _ExplorePropertiesScreenState extends State<ExplorePropertiesScreen> {
   void initState() {
     super.initState();
     _propertiesFuture = _repository.getAvailableProperties();
+    // load this user's saved list, so bookmarks show correctly everywhere
+    SavedPropertiesRepository.instance.refresh();
   }
 
   /// Load the list again (pull-to-refresh and the retry button).

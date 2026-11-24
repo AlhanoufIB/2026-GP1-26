@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+
+import '../dataconnect_generated/generated.dart';
 import '../models/business_requirement.dart';
 import '../models/property.dart';
 import '../models/recommendation.dart';
@@ -8,7 +11,8 @@ import '../repositories/property_repository.dart';
 /// To switch, write AiRecommendationService and change [instance].
 /// The Recommendations page does not need to change.
 abstract class RecommendationService {
-  static RecommendationService instance = RuleBasedRecommendationService();
+  static RecommendationService instance =
+      StoringRecommendationService(RuleBasedRecommendationService());
 
   /// Best properties for this requirement, best first (max 3).
   Future<List<Recommendation>> getRecommendations(
@@ -118,5 +122,42 @@ class RuleBasedRecommendationService implements RecommendationService {
     if (wantsOffice) return propertyType == PropertyType.office;
     return propertyType == PropertyType.shop ||
         propertyType == PropertyType.kiosk;
+  }
+}
+
+
+/// Takes the results of another service (today: the rule-based one,
+/// later: the AI model) and stores them in the RECOMMENDATION table,
+/// one row per result with rank 1..3.
+class StoringRecommendationService implements RecommendationService {
+  final RecommendationService inner;
+  final MullakConnector _db = MullakConnector.instance;
+  final Set<String> _storedFor = {}; // requirements already stored
+
+  StoringRecommendationService(this.inner);
+
+  @override
+  Future<List<Recommendation>> getRecommendations(
+      BusinessRequirement requirement) async {
+    final results = await inner.getRecommendations(requirement);
+    if (!_storedFor.add(requirement.requirementId)) return results;
+    for (final r in results) {
+      try {
+        await _db
+            .createRecommendation(
+              requirementId: requirement.requirementId,
+              propertyId: r.property.propertyId,
+              locationScore: r.locationScore,
+              propertyMatchScore: r.propertyMatchScore,
+              explanation: r.explanation,
+              rank: r.rank,
+            )
+            .execute();
+      } catch (e) {
+        // showing the results matters more than storing them
+        debugPrint('Could not store recommendation ${r.rank}: $e');
+      }
+    }
+    return results;
   }
 }

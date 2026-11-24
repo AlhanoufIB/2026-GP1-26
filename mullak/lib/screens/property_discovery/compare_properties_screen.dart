@@ -6,6 +6,8 @@ import '../../models/property.dart';
 import '../../repositories/property_repository.dart';
 import '../../theme/app_colors.dart';
 import 'utils/discovery_formatters.dart';
+import '../../widgets/app_bottom_nav.dart';
+
 
 /// "مقارنة العقارات" — side-by-side table of 2 to 4 saved properties.
 class ComparePropertiesScreen extends StatefulWidget {
