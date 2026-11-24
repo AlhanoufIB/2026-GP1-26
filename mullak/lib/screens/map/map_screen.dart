@@ -11,6 +11,7 @@ import '../property_discovery/property_details_screen.dart';
 import '../property_discovery/utils/discovery_formatters.dart';
 import '../notifications/notifications_screen.dart';
 
+import 'heatmap_data.dart';
 import 'map_property_service.dart';
 import 'widgets/map_filter_sheet.dart';
 
@@ -23,15 +24,12 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
+  late final Future<List<HeatPoint>> _heatPoints = loadDatasetPoints();
 
-  final MapPropertyService _mapPropertyService =
-      MapPropertyService();
+  final MapPropertyService _mapPropertyService = MapPropertyService();
 
-  static const LatLng _riyadhCenter =
-      LatLng(24.7500, 46.6700);
+  static const LatLng _riyadhCenter = LatLng(24.7500, 46.6700);
 
-  // Density legend colors.
-  // Actual neighborhood density data will be linked later.
   static const Color _highDensity = Color(0xFFD95B59);
   static const Color _mediumDensity = Color(0xFFF0A44A);
   static const Color _lowDensity = Color(0xFFF0D76C);
@@ -60,8 +58,7 @@ class _MapScreenState extends State<MapScreen> {
     });
 
     try {
-      final properties =
-          await _mapPropertyService.getAvailableProperties();
+      final properties = await _mapPropertyService.getAvailableProperties();
 
       if (!mounted) return;
 
@@ -107,21 +104,17 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Apply selected filters to Firebase query results.
-  bool _matchesFilters(
-    ListAvailablePropertiesProperties property,
-  ) {
+  bool _matchesFilters(ListAvailablePropertiesProperties property) {
     // Property type filter.
     if (_filters.propertyType != null &&
         property.propertyType != _filters.propertyType) {
       return false;
     }
 
-    // Dynamic price range.
     // The default upper bound is infinity, meaning no price limit.
     final price = _filters.priceRange;
 
-    if (property.rentPrice < price.start ||
-        property.rentPrice > price.end) {
+    if (property.rentPrice < price.start || property.rentPrice > price.end) {
       return false;
     }
 
@@ -131,12 +124,10 @@ class _MapScreenState extends State<MapScreen> {
         return property.areaSqm < 50;
 
       case '50to100':
-        return property.areaSqm >= 50 &&
-            property.areaSqm <= 100;
+        return property.areaSqm >= 50 && property.areaSqm <= 100;
 
       case '100to200':
-        return property.areaSqm > 100 &&
-            property.areaSqm <= 200;
+        return property.areaSqm > 100 && property.areaSqm <= 200;
 
       case 'over200':
         return property.areaSqm > 200;
@@ -147,8 +138,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Properties matching the currently selected filters.
-  List<ListAvailablePropertiesProperties>
-      get _visibleProperties {
+  List<ListAvailablePropertiesProperties> get _visibleProperties {
     return _allProperties.where(_matchesFilters).toList();
   }
 
@@ -161,8 +151,7 @@ class _MapScreenState extends State<MapScreen> {
 
   // Open map filters using the complete Firebase property list.
   Future<void> _openFilters() async {
-    final result =
-        await showModalBottomSheet<MapFilterSelection>(
+    final result = await showModalBottomSheet<MapFilterSelection>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -196,9 +185,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Select a real property marker.
-  void _selectProperty(
-    ListAvailablePropertiesProperties property,
-  ) {
+  void _selectProperty(ListAvailablePropertiesProperties property) {
     setState(() {
       _selectedProperty = property;
     });
@@ -229,10 +216,7 @@ class _MapScreenState extends State<MapScreen> {
     });
 
     try {
-      final property =
-          await _mapPropertyService.getPropertyById(
-        listing.id,
-      );
+      final property = await _mapPropertyService.getPropertyById(listing.id);
 
       if (!mounted) return;
 
@@ -338,12 +322,9 @@ class _MapScreenState extends State<MapScreen> {
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                20, 0, 20, 24,
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Property image.
@@ -370,7 +351,7 @@ class _MapScreenState extends State<MapScreen> {
 
                   const SizedBox(height: 6),
 
-                  // City, district and property ID.
+                  // City and district.
                   Text(
                     '${property.city} · '
                     '${property.district}',
@@ -454,8 +435,7 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                     ),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'وصف العقار',
@@ -469,10 +449,7 @@ class _MapScreenState extends State<MapScreen> {
                         const SizedBox(height: 8),
 
                         Text(
-                          property.description
-                                      ?.trim()
-                                      .isNotEmpty ==
-                                  true
+                          property.description?.trim().isNotEmpty == true
                               ? property.description!
                               : 'لا يوجد وصف',
                           style: const TextStyle(
@@ -501,13 +478,11 @@ class _MapScreenState extends State<MapScreen> {
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                       child: const Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             'عرض تفاصيل العقار',
@@ -552,8 +527,7 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             value,
@@ -581,7 +555,6 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Density legend.
-  // Display only: no density colors are applied to markers yet.
   Widget _densityLegend() {
     Widget legendItem(Color color, String label) {
       return Row(
@@ -626,8 +599,6 @@ class _MapScreenState extends State<MapScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-         
-
           legendItem(_highDensity, 'كثافة عالية'),
 
           const SizedBox(height: 8),
@@ -689,20 +660,14 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Property marker.
-  // Density-based marker coloring will be added later.
-  Widget _propertyMarker(
-    ListAvailablePropertiesProperties property,
-  ) {
-    final selected =
-        _selectedProperty?.id == property.id;
+  Widget _propertyMarker(ListAvailablePropertiesProperties property) {
+    final selected = _selectedProperty?.id == property.id;
 
     return GestureDetector(
       onTap: () => _selectProperty(property),
       child: Center(
         child: AnimatedContainer(
-          duration: const Duration(
-            milliseconds: 180,
-          ),
+          duration: const Duration(milliseconds: 180),
           width: selected ? 24 : 19,
           height: selected ? 24 : 19,
           decoration: BoxDecoration(
@@ -725,9 +690,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Small property card on the map.
-  Widget _propertyCard(
-    ListAvailablePropertiesProperties property,
-  ) {
+  Widget _propertyCard(ListAvailablePropertiesProperties property) {
     final imageUrl = property.coverImage.isEmpty
         ? null
         : property.coverImage.first.imageUrl;
@@ -745,13 +708,11 @@ class _MapScreenState extends State<MapScreen> {
         ],
       ),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   property.title,
@@ -807,9 +768,7 @@ class _MapScreenState extends State<MapScreen> {
                         )
                       else ...[
                         Container(
-                          padding: const EdgeInsets.only(
-                            bottom: 2,
-                          ),
+                          padding: const EdgeInsets.only(bottom: 2),
                           decoration: const BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
@@ -940,12 +899,66 @@ class _MapScreenState extends State<MapScreen> {
                 TileLayer(
                   urlTemplate:
                       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName:
-                      'sa.edu.ksu.mullak',
+                  userAgentPackageName: 'sa.edu.ksu.mullak',
+                ),
+
+                // Draw dataset density below the property markers.
+                FutureBuilder<List<HeatPoint>>(
+                  future: _heatPoints,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      debugPrint('HEAT MAP DATA ERROR: ${snapshot.error}');
+                      return const IgnorePointer(
+                        child: Center(
+                          child: Text('تعذّر تحميل بيانات الخريطة الحرارية'),
+                        ),
+                      );
+                    }
+
+                    final points = snapshot.data;
+                    if (points == null) return const SizedBox.shrink();
+
+                    final propertyPoints = _allProperties.map(
+                   (property) => HeatPoint(
+                   lat: property.latitude,
+                   lng: property.longitude,
+                   fromUser: true,
+                   district: property.district,
+                   category: property.propertyType,
+                  ),
+);
+
+final cells = buildCells([...points, ...propertyPoints]);
+                    final colorOf = densityColors(cells);
+
+                    return IgnorePointer(
+                      child: CircleLayer(
+                        circles: cells.map((cell) {
+                          final densityColor = colorOf(cell.count);
+                          final Color color;
+
+                          if (densityColor == Colors.red) {
+                            color = _highDensity;
+                          } else if (densityColor == Colors.orange) {
+                            color = _mediumDensity;
+                          } else {
+                            color = _lowDensity;
+                          }
+
+                          return CircleMarker(
+                            point: cell.center,
+                            radius: 320,
+                            useRadiusInMeter: true,
+                            color: color.withValues(alpha: 0.45),
+                            borderStrokeWidth: 0,
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  },
                 ),
 
                 // Real Firebase property markers.
-                // No density circles or colors are added here.
                 MarkerLayer(
                   markers: properties.map((property) {
                     return Marker(
@@ -978,7 +991,6 @@ class _MapScreenState extends State<MapScreen> {
             ),
 
             // Density legend.
-            // Actual density data will be connected later.
             Positioned(
               top: 80,
               left: 12,
@@ -992,12 +1004,10 @@ class _MapScreenState extends State<MapScreen> {
               child: Material(
                 color: AppColors.brown,
                 elevation: 3,
-                borderRadius:
-                    BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12),
                 child: InkWell(
                   onTap: _openFilters,
-                  borderRadius:
-                      BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12),
                   child: const SizedBox(
                     width: 48,
                     height: 48,
@@ -1018,8 +1028,7 @@ class _MapScreenState extends State<MapScreen> {
               child: Material(
                 color: Colors.white,
                 elevation: 2,
-                borderRadius:
-                    BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12),
                 child: IconButton(
                   tooltip: 'العودة لوسط الرياض',
                   onPressed: _resetMap,
@@ -1038,12 +1047,10 @@ class _MapScreenState extends State<MapScreen> {
               child: Material(
                 color: Colors.white,
                 elevation: 2,
-                borderRadius:
-                    BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12),
                 child: IconButton(
                   tooltip: 'تحديث العقارات',
-                  onPressed:
-                      _isLoading ? null : _loadMapProperties,
+                  onPressed: _isLoading ? null : _loadMapProperties,
                   icon: const Icon(
                     Icons.refresh,
                     color: AppColors.brown,
@@ -1053,16 +1060,12 @@ class _MapScreenState extends State<MapScreen> {
             ),
 
             // Selected property card.
-            if (_selectedProperty != null &&
-                !_isLoading &&
-                _loadError == null)
+            if (_selectedProperty != null && !_isLoading && _loadError == null)
               Positioned(
                 left: 12,
                 right: 12,
                 bottom: 14,
-                child: _propertyCard(
-                  _selectedProperty!,
-                ),
+                child: _propertyCard(_selectedProperty!),
               ),
 
             // Loading state.
@@ -1071,9 +1074,7 @@ class _MapScreenState extends State<MapScreen> {
                 left: 16,
                 right: 16,
                 bottom: 18,
-                child: _messagePanel(
-                  'جاري تحميل العقارات...',
-                ),
+                child: _messagePanel('جاري تحميل العقارات...'),
               )
 
             // Database error.
