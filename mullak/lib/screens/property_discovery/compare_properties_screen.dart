@@ -80,6 +80,7 @@ class _ComparePropertiesScreenState extends State<ComparePropertiesScreen> {
                 child: CircularProgressIndicator(color: AppColors.brown))
             : _buildContent(props),
       ),
+      bottomNavigationBar: const AppBottomNav(current: AppTab.explore),
     );
   }
 

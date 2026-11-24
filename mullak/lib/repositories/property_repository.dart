@@ -83,7 +83,7 @@ class DataConnectPropertyRepository implements PropertyRepository {
       address: json['address'] as String?,
       description: json['description'] as String?,
       imageUrls: images,
-      // hasParking is not in the ER / database -> stays null ("غير محدد")
+      hasParking: json['hasParking'] as bool?,
     );
   }
 }

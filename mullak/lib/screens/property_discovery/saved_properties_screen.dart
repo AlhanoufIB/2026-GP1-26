@@ -11,7 +11,6 @@ import 'widgets/property_image.dart';
 import 'compare_properties_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
 
-
 /// "العقارات المحفوظة" — saved list + pick 2 to 4 properties to compare.
 class SavedPropertiesScreen extends StatefulWidget {
   const SavedPropertiesScreen({super.key});
@@ -98,15 +97,18 @@ class _SavedPropertiesScreenState extends State<SavedPropertiesScreen> {
           },
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
-          child: PrimaryButton(
-            text: _compareLabel,
-            onPressed: _selected.length >= 2 ? _openCompare : null,
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
+            child: PrimaryButton(
+              text: _compareLabel,
+              onPressed: _selected.length >= 2 ? _openCompare : null,
+            ),
           ),
-        ),
+          const AppBottomNav(current: AppTab.explore),
+        ],
       ),
     );
   }
