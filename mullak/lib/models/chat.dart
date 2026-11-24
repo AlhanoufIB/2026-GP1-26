@@ -74,10 +74,10 @@ class ChatConversation {
     final district = currentProperty.district.trim();
 
     if (district.isEmpty) {
-      return '${currentProperty.typeLabel} · رقم $propertyId';
+      return '${currentProperty.typeLabel}';
     }
 
-    return '${currentProperty.typeLabel} $district · رقم $propertyId';
+    return '${currentProperty.typeLabel} $district';
   }
 
   String get lastMessage {
