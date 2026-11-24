@@ -373,8 +373,7 @@ class _MapScreenState extends State<MapScreen> {
                   // City, district and property ID.
                   Text(
                     '${property.city} · '
-                    '${property.district} · '
-                    'رقم العقار ${property.propertyId}',
+                    '${property.district}',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.hint,
