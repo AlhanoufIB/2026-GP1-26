@@ -51,6 +51,199 @@ class ChatFirestoreService {
         .snapshots();
   }
 
+  /// Generate a deterministic chat ID without creating
+  /// any Firestore document.
+  String buildChatId({
+    required String propertyId,
+    required String propertyOwnerId,
+  }) {
+    final businessOwnerId = currentUserId;
+    final ownerId = propertyOwnerId.trim();
+    final id = propertyId.trim();
+
+    if (id.isEmpty ||
+        ownerId.isEmpty ||
+        id.contains('/') ||
+        ownerId.contains('/')) {
+      throw ArgumentError(
+        'Invalid property or owner ID.',
+      );
+    }
+
+    if (businessOwnerId == ownerId) {
+      throw StateError(
+        'You cannot start a chat with yourself.',
+      );
+    }
+
+    return '${id}_${businessOwnerId}_$ownerId';
+  }
+
+  /// Find an existing conversation without creating one.
+  Future<String?> findExistingChat({
+    required String propertyId,
+    required String propertyOwnerId,
+  }) async {
+    final businessOwnerId = currentUserId;
+    final ownerId = propertyOwnerId.trim();
+    final id = propertyId.trim();
+
+    final chatId = buildChatId(
+      propertyId: id,
+      propertyOwnerId: ownerId,
+    );
+
+    final result = await _firestore
+        .collection('chats')
+        .where(
+          'participantIds',
+          arrayContains: businessOwnerId,
+        )
+        .where(
+          FieldPath.documentId,
+          isEqualTo: chatId,
+        )
+        .limit(1)
+        .get(
+          const GetOptions(source: Source.server),
+        );
+
+    if (result.docs.isEmpty) {
+      return null;
+    }
+
+    final document = result.docs.first;
+    final data = document.data();
+    final participants = data['participantIds'];
+
+    if (data['propertyId'] != id ||
+        data['businessOwnerId'] != businessOwnerId ||
+        data['propertyOwnerId'] != ownerId ||
+        participants is! List ||
+        !participants.contains(businessOwnerId) ||
+        !participants.contains(ownerId)) {
+      throw StateError(
+        'Invalid conversation data.',
+      );
+    }
+
+    return document.id;
+  }
+
+  /// Create a conversation only when the first message
+  /// is sent. Save both documents atomically.
+  Future<String> sendFirstMessage({
+    required String propertyId,
+    required String propertyOwnerId,
+    required String text,
+  }) async {
+    final message = text.trim();
+
+    if (message.isEmpty) {
+      throw ArgumentError('Message cannot be empty.');
+    }
+
+    if (message.length > 2000) {
+      throw ArgumentError('Message is too long.');
+    }
+
+    final businessOwnerId = currentUserId;
+    final ownerId = propertyOwnerId.trim();
+    final id = propertyId.trim();
+
+    final chatId = buildChatId(
+      propertyId: id,
+      propertyOwnerId: ownerId,
+    );
+
+    // Reuse an existing conversation, including
+    // previously created empty conversations.
+    final existingChatId = await findExistingChat(
+      propertyId: id,
+      propertyOwnerId: ownerId,
+    );
+
+    if (existingChatId != null) {
+      await sendMessage(
+        chatId: existingChatId,
+        text: message,
+      );
+
+      return existingChatId;
+    }
+
+    final businessOwnerName =
+        await _profileService.getCurrentUserName();
+
+    if (businessOwnerName == null ||
+        businessOwnerName.trim().isEmpty) {
+      throw StateError(
+        'Business owner profile name is unavailable.',
+      );
+    }
+
+    final chatRef =
+        _firestore.collection('chats').doc(chatId);
+
+    final messageRef =
+        chatRef.collection('messages').doc();
+
+    final batch = _firestore.batch();
+
+    // Create the conversation with its first message
+    // already included in the chat preview.
+    batch.set(chatRef, {
+      'propertyId': id,
+      'businessOwnerId': businessOwnerId,
+      'businessOwnerName': businessOwnerName.trim(),
+      'propertyOwnerId': ownerId,
+      'participantIds': [
+        businessOwnerId,
+        ownerId,
+      ],
+      'createdAt': FieldValue.serverTimestamp(),
+      'lastMessageAt': FieldValue.serverTimestamp(),
+      'lastMessageText': message,
+      'lastSenderId': businessOwnerId,
+    });
+
+    // Create the first message in the same batch.
+    batch.set(messageRef, {
+      'senderId': businessOwnerId,
+      'content': message,
+      'sentAt': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
+
+    try {
+      await batch.commit();
+    } on FirebaseException catch (error) {
+      if (error.code != 'permission-denied') {
+        rethrow;
+      }
+
+      // Another session may have created the same
+      // conversation before this batch was committed.
+      final concurrentChatId = await findExistingChat(
+        propertyId: id,
+        propertyOwnerId: ownerId,
+      );
+
+      if (concurrentChatId == null) {
+        rethrow;
+      }
+
+      await sendMessage(
+        chatId: concurrentChatId,
+        text: message,
+      );
+
+      return concurrentChatId;
+    }
+
+    return chatId;
+  }
+
   /// Send a message and update the chat preview.
   Future<void> sendMessage({
     required String chatId,
@@ -150,10 +343,8 @@ class ChatFirestoreService {
     }
   }
 
-  /// Get an existing chat or create a new one.
-  ///
-  /// The chat ID is deterministic, so the same
-  /// property and users share one conversation.
+  /// Legacy method retained temporarily while
+  /// updating the chat launcher.
   Future<String> getOrCreateChat({
     required String propertyId,
     required String propertyOwnerId,
@@ -162,23 +353,10 @@ class ChatFirestoreService {
     final ownerId = propertyOwnerId.trim();
     final id = propertyId.trim();
 
-    if (id.isEmpty ||
-        ownerId.isEmpty ||
-        id.contains('/') ||
-        ownerId.contains('/')) {
-      throw ArgumentError(
-        'Invalid property or owner ID.',
-      );
-    }
-
-    if (businessOwnerId == ownerId) {
-      throw StateError(
-        'You cannot start a chat with yourself.',
-      );
-    }
-
-    final chatId =
-        '${id}_${businessOwnerId}_$ownerId';
+    final chatId = buildChatId(
+      propertyId: id,
+      propertyOwnerId: ownerId,
+    );
 
     final chatRef =
         _firestore.collection('chats').doc(chatId);
@@ -194,9 +372,6 @@ class ChatFirestoreService {
     }
 
     try {
-      // Try to create the chat directly.
-      // This avoids reading a nonexistent document,
-      // which can be denied by Firestore rules.
       await chatRef.set({
         'propertyId': id,
         'businessOwnerId': businessOwnerId,
@@ -216,9 +391,6 @@ class ChatFirestoreService {
         rethrow;
       }
 
-      // If the document already exists, the rules
-      // reject replacing it. Check whether it is
-      // the expected conversation instead.
       final existingChat = await chatRef.get();
 
       if (!existingChat.exists) {
@@ -226,7 +398,6 @@ class ChatFirestoreService {
       }
 
       final data = existingChat.data();
-
       final participants = data?['participantIds'];
 
       if (data?['propertyId'] != id ||

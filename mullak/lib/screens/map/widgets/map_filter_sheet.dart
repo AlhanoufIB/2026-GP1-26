@@ -335,7 +335,7 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'نوع النشاط',
+                      'نوع العقار',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,

@@ -18,22 +18,6 @@ class ChatLauncher {
       final chatService = ChatFirestoreService.instance;
       final propertyService = ChatPropertyService.instance;
 
-      // Property IDs in Data Connect are UUIDs.
-            // Data Connect UUIDs come with or without dashes.
-      final uuidPattern = RegExp(
-        r'^[0-9a-fA-F]{8}-?'
-        r'[0-9a-fA-F]{4}-?'
-        r'[0-9a-fA-F]{4}-?'
-        r'[0-9a-fA-F]{4}-?'
-        r'[0-9a-fA-F]{12}$',
-      );
-
-      if (!uuidPattern.hasMatch(property.propertyId)) {
-        throw StateError(
-          'This property uses a sample ID.',
-        );
-      }
-
       // Load the actual property and owner from Data Connect.
       final propertyInfo = await propertyService.getProperty(
         property.propertyId,

@@ -3,13 +3,22 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Check whether the signed-in user belongs to this chat.
+    // Check whether the signed-in user belongs to an existing chat.
     function isParticipant(chatId) {
       return request.auth != null
         && exists(
           /databases/$(database)/documents/chats/$(chatId)
         )
         && request.auth.uid in get(
+          /databases/$(database)/documents/chats/$(chatId)
+        ).data.participantIds;
+    }
+
+    // Check chat membership after an atomic write.
+    // Supports creating a chat and its first message together.
+    function isParticipantAfter(chatId) {
+      return request.auth != null
+        && request.auth.uid in getAfter(
           /databases/$(database)/documents/chats/$(chatId)
         ).data.participantIds;
     }
@@ -42,7 +51,8 @@ service cloud.firestore {
           'participantIds',
           'createdAt',
           'lastMessageAt',
-          'lastMessageText'
+          'lastMessageText',
+          'lastSenderId'
         ])
 
         && request.resource.data.propertyId is string
@@ -76,7 +86,26 @@ service cloud.firestore {
 
         && request.resource.data.createdAt == request.time
         && request.resource.data.lastMessageAt == request.time
-        && request.resource.data.lastMessageText == '';
+
+        && request.resource.data.lastMessageText is string
+        && request.resource.data.lastMessageText.size() <= 2000
+
+        && (
+          // Temporary compatibility with older app versions.
+          (
+            request.resource.data.lastMessageText == ''
+            && !('lastSenderId' in request.resource.data)
+          )
+
+          ||
+
+          // New conversation created with its first message.
+          (
+            request.resource.data.lastMessageText.size() > 0
+            && request.resource.data.lastSenderId
+              == request.auth.uid
+          )
+        );
 
       // Participants can update only the last-message preview.
       allow update: if isParticipant(chatId)
@@ -104,8 +133,9 @@ service cloud.firestore {
         // Only participants can read messages.
         allow read: if isParticipant(chatId);
 
-        // Create a message.
-        allow create: if isParticipant(chatId)
+        // Create a message in an existing chat or
+        // together with a newly created chat.
+        allow create: if isParticipantAfter(chatId)
 
           && request.resource.data.keys().hasAll([
             'senderId',

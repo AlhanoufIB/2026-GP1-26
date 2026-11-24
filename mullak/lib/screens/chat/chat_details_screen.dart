@@ -35,6 +35,9 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
   Stream<QuerySnapshot<Map<String, dynamic>>>?
       _messagesStream;
 
+  // The chat ID becomes available after the first message.
+  String? _activeChatId;
+
   bool _isSending = false;
 
   // Prevent duplicate read updates while a request is running.
@@ -42,7 +45,23 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
 
   ChatConversation get _conversation => widget.conversation;
 
-  String? get _chatId => _conversation.chatId;
+  String? get _chatId => _activeChatId;
+
+  // Allow sending to an existing conversation or
+  // starting a valid new conversation.
+  bool get _canSend {
+    if (_isSending) return false;
+
+    if (_chatId != null && _chatId!.isNotEmpty) {
+      return true;
+    }
+
+    return _conversation.propertyId.trim().isNotEmpty &&
+        _conversation.ownerId.trim().isNotEmpty &&
+        _conversation.businessOwnerId ==
+            _chatService.currentUserId &&
+        _conversation.ownerId != _chatService.currentUserId;
+  }
 
   String get _otherParticipantRole {
     if (_chatService.currentUserId == _conversation.ownerId) {
@@ -55,9 +74,17 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
   void initState() {
     super.initState();
 
+    final initialChatId = _conversation.chatId;
+
+    _activeChatId =
+        initialChatId != null && initialChatId.isNotEmpty
+            ? initialChatId
+            : null;
+
     final chatId = _chatId;
 
-    if (chatId != null && chatId.isNotEmpty) {
+    // Listen immediately only if the conversation exists.
+    if (chatId != null) {
       _messagesStream = _chatService.watchMessages(chatId);
     }
   }
@@ -179,7 +206,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
     final text = _messageController.text.trim();
     final chatId = _chatId;
 
-    if (text.isEmpty || chatId == null || _isSending) {
+    if (text.isEmpty || !_canSend) {
       return;
     }
 
@@ -199,10 +226,31 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
     });
 
     try {
-      await _chatService.sendMessage(
-        chatId: chatId,
-        text: text,
-      );
+      if (chatId == null) {
+        // Create the conversation and its first message
+        // together in Firestore.
+        final newChatId =
+            await _chatService.sendFirstMessage(
+          propertyId: _conversation.propertyId,
+          propertyOwnerId: _conversation.ownerId,
+          text: text,
+        );
+
+        if (!mounted) return;
+
+        // Start listening only after successful creation.
+        setState(() {
+          _activeChatId = newChatId;
+          _messagesStream =
+              _chatService.watchMessages(newChatId);
+        });
+      } else {
+        // Send normally to an existing conversation.
+        await _chatService.sendMessage(
+          chatId: chatId,
+          text: text,
+        );
+      }
 
       if (!mounted) return;
 
@@ -379,13 +427,15 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
   }
 
   Widget _buildMessages() {
+    // A new conversation does not have a Firestore
+    // document until the first message is sent.
     if (_messagesStream == null) {
       return const Expanded(
         child: Center(
           child: Padding(
             padding: EdgeInsets.all(24),
             child: Text(
-              'هذه المحادثة غير مرتبطة بقاعدة البيانات بعد.',
+              'ابدأ المحادثة الآن',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -477,7 +527,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
   }
 
   Widget _buildMessageInput() {
-    final canSend = _chatId != null && !_isSending;
+    final canSend = _canSend;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(

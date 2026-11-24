@@ -419,8 +419,16 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         );
                       }
 
+                      // Show only conversations that contain
+                      // at least one sent message.
                       final documents =
-                          snapshot.data!.docs.toList();
+                          snapshot.data!.docs.where((document) {
+                        final lastMessage =
+                            document.data()['lastMessageText'];
+
+                        return lastMessage is String &&
+                            lastMessage.trim().isNotEmpty;
+                      }).toList();
 
                       documents.sort((a, b) {
                         final aTime =
