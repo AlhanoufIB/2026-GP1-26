@@ -45,7 +45,7 @@ class PropertyCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${property.areaSqm.round()} م² · رقم العقار \u2066${property.shortId}\u2069',
+                  '${formatNumber(property.areaSqm.round())} م²',
                   textDirection: TextDirection.rtl,
                   style: const TextStyle(
                       fontSize: 12, color: AppColors.textMuted),

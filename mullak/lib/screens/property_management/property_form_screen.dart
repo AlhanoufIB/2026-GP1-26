@@ -5,13 +5,27 @@ import 'package:latlong2/latlong.dart';
 import '../../models/property_myProperty.dart';
 import '../../services/property_service.dart';
 import '../../theme/app_colors.dart';
-import '../../widgets/app_bottom_nav.dart'; // عدّلي المسار لو مختلف
+import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/back_link.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
+import '../../widgets/form_fields.dart';
 import '../../widgets/image_picker_section.dart';
 import 'location_picker_screen.dart';
 import 'suggested_price_screen.dart';
+
+/// قوائم مشتقة من QI_Neighborhood_Data.xlsx:
+///  أنواع العقار ← Rental Commercial + Parcel Types
+///  أنواع النشاط ← تصنيفات Land Use (Food/Medical/Educational/Entertainment/Sports/Commercial)
+const Map<String, List<String>> kActivityByType = {
+  'محل': ['مقهى', 'مطعم', 'بقالة / سوبرماركت', 'ملابس وأزياء', 'صيدلية', 'صالون وخدمات تجميل', 'خدمات تجارية أخرى'],
+  'مكتب': ['مكتب إداري', 'مكتب خدمات', 'عيادة', 'مركز تدريب وتعليم'],
+  'معرض': ['معرض سيارات', 'معرض أثاث', 'معرض تجاري عام'],
+  'مبنى تجاري': ['مجمع تجاري', 'مركز طبي', 'مرافق تعليمية', 'ترفيه', 'رياضة'],
+  'مبنى تجاري سكني': ['مكاتب وشقق', 'محلات ومكاتب'],
+  'دور': ['مكاتب', 'عيادات', 'مطعم / مقهى'],
+  'أرض تجارية': ['بناء مشروع تجاري', 'موقف سيارات'],
+};
+final List<String> kPropertyTypes = kActivityByType.keys.toList();
 
 class PropertyFormScreen extends StatefulWidget {
   /// null = إضافة عقار جديد، غير null = تعديل
@@ -23,7 +37,24 @@ class PropertyFormScreen extends StatefulWidget {
 }
 
 class _PropertyFormScreenState extends State<PropertyFormScreen> {
-  late final TextEditingController _type;
+  final _formKey = GlobalKey<FormState>();
+
+  String? _type;
+  String? _activity;
+
+  // لو العقار القديم نوعه/نشاطه مو في القائمة نضيفه عشان ما يختفي
+  List<String> get _typeOptions => [
+        ...kPropertyTypes,
+        if (_type != null && !kPropertyTypes.contains(_type)) _type!,
+      ];
+  List<String> get _activityOptions => [
+        ...(kActivityByType[_type] ?? const <String>[]),
+        if (_activity != null &&
+            !(kActivityByType[_type] ?? const <String>[]).contains(_activity))
+          _activity!,
+      ];
+
+  late final TextEditingController _title;
   late final TextEditingController _area;
   late final TextEditingController _district;
   late final TextEditingController _address;
@@ -37,6 +68,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   bool _hasParking = false;
   double? _estimated;
   bool _saving = false;
+  bool _submitted = false;
 
   bool get _isEdit => widget.property != null;
 
@@ -44,7 +76,9 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   void initState() {
     super.initState();
     final p = widget.property;
-    _type = TextEditingController(text: p?.propertyType ?? '');
+    _type = (p?.propertyType.isEmpty ?? true) ? null : p!.propertyType;
+    _activity = (p?.activityType?.isEmpty ?? true) ? null : p!.activityType;
+    _title = TextEditingController(text: p?.title ?? '');
     _area = TextEditingController(text: p?.areaSqm.round().toString() ?? '');
     _district = TextEditingController(text: p?.district ?? '');
     _address = TextEditingController(text: p?.address ?? '');
@@ -58,7 +92,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
 
   @override
   void dispose() {
-    _type.dispose();
+    _title.dispose();
     _area.dispose();
     _district.dispose();
     _address.dispose();
@@ -72,9 +106,18 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
+  String? _requiredText(String? v, String msg) =>
+      (v == null || v.trim().isEmpty) ? msg : null;
+
+  String? _requiredNumber(String? v, String msg) {
+    if (v == null || v.trim().isEmpty) return msg;
+    final n = int.tryParse(v.trim());
+    return (n == null || n <= 0) ? 'أدخل رقماً صحيحاً' : null;
+  }
+
   Future<void> _suggestPrice() async {
     final area = int.tryParse(_area.text.trim());
-    if (_type.text.trim().isEmpty || area == null || area <= 0) {
+    if (_type == null || area == null || area <= 0) {
       _showMessage('أدخل نوع العقار والمساحة أولاً لنقترح لك سعراً');
       return;
     }
@@ -83,7 +126,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => SuggestedPriceScreen(
-          type: _type.text.trim(),
+          type: _type!,
           area: area,
           district: _district.text.trim(),
         ),
@@ -110,29 +153,27 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   }
 
   Future<void> _submit() async {
-    final area = int.tryParse(_area.text.trim());
-    final price = int.tryParse(_price.text.trim());
-    final type = _type.text.trim();
-    final district = _district.text.trim();
+    setState(() => _submitted = true);
+    final fieldsOk = _formKey.currentState!.validate();
+    final extraOk = _type != null && _latLng != null;
+    if (!fieldsOk || !extraOk) {
+      _showMessage('يرجى تعبئة جميع الحقول المطلوبة');
+      return;
+    }
 
-    if (type.isEmpty || area == null || district.isEmpty || price == null) {
-      _showMessage('عبّي نوع العقار والمساحة والحي والإيجار السنوي');
-      return;
-    }
-    if (_latLng == null) {
-      _showMessage('حدّد موقع العقار على الخريطة');
-      return;
-    }
+    final area = int.parse(_area.text.trim());
+    final price = int.parse(_price.text.trim());
 
     setState(() => _saving = true);
     try {
       final old = widget.property;
       final property = Property(
         id: old?.id ?? '',
-        title: Property.buildTitle(type, district), // تلقائي
-        propertyType: type,
+        title: _title.text.trim(), // يكتبه المستخدم
+        propertyType: _type!,
+        activityType: _activity,
         areaSqm: area.toDouble(),
-        district: district,
+        district: _district.text.trim(),
         city: old?.city ?? kDefaultCity,
         rentPrice: price.toDouble(),
         status: old?.status ?? 'available',
@@ -153,11 +194,10 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       }
       if (!mounted) return;
       Navigator.pop(context, true);
-        } catch (e, st) {
+    } catch (e, st) {
       debugPrint('SAVE ERROR: $e\n$st');
       _showMessage('تعذّر الحفظ، تأكد من الإنترنت وحاول مرة ثانية');
-    }
-    finally {
+    } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
@@ -165,80 +205,115 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   @override
   Widget build(BuildContext context) {
     final digits = [FilteringTextInputFormatter.digitsOnly];
+    final mapError = _submitted && _latLng == null;
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const BackLink(text: 'عقاراتي'),
-                    const SizedBox(height: 10),
-                    Text(
-                      _isEdit ? 'تعديل العقار' : 'إضافة عقار',
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textDark,
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const BackLink(text: 'عقاراتي'),
+                      const SizedBox(height: 10),
+                      Text(
+                        _isEdit ? 'تعديل العقار' : 'إضافة عقار',
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark,
+                        ),
                       ),
-                    ),
-                    if (_isEdit) ...[
-                      const SizedBox(height: 4),
-                      Text('رقم العقار \u2066${widget.property!.shortId}\u2069',
-                          style: const TextStyle(
-                              fontSize: 12, color: AppColors.textMuted)),
-                    ],
-                    const SizedBox(height: 18),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'نوع العقار',
-                            hint: 'محل، مكتب، أرض',
-                            controller: _type,
+                      const RequiredNote(),
+
+                      // 1) العنوان
+                      const FormFieldLabel('عنوان العقار', required: true),
+                      AppTextField(
+                        controller: _title,
+                        hint: 'العنوان',
+                        validator: (v) => _requiredText(v, 'العنوان مطلوب'),
+                      ),
+
+                      // 2) المساحة
+                      const FormFieldLabel('المساحة (م²)', required: true),
+                      AppTextField(
+                        controller: _area,
+                        hint: 'مثال: 85',
+                        keyboardType: TextInputType.number,
+                        inputFormatters: digits,
+                        validator: (v) => _requiredNumber(v, 'المساحة مطلوبة'),
+                      ),
+
+                      // 3+4) نوع العقار + نوع النشاط (يعتمد على النوع)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const FormFieldLabel('نوع العقار',
+                                    required: true),
+                                AppDropdownField(
+                                  value: _type,
+                                  hint: 'محل، مكتب، أرض',
+                                  items: _typeOptions,
+                                  onChanged: (v) => setState(() {
+                                    _type = v;
+                                    _activity = null;
+                                  }),
+                                  validator: (v) =>
+                                      v == null ? 'نوع العقار مطلوب' : null,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'المساحة (م²)',
-                            hint: 'مثال: 85',
-                            controller: _area,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: digits,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const FormFieldLabel('نوع النشاط'),
+                                AppDropdownField(
+                                  key: ValueKey(_type),
+                                  value: _activity,
+                                  hint: 'مقهى، مطعم،...',
+                                  items: _activityOptions,
+                                  onChanged: _type == null
+                                      ? null
+                                      : (v) => setState(() => _activity = v),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    CustomTextField(
-                      label: 'الحي',
-                      hint: 'مثال: العليا',
-                      controller: _district,
-                    ),
-                    const SizedBox(height: 14),
-                    CustomTextField(
-                      label: 'العنوان',
-                      hint: 'الشارع وأقرب معلم',
-                      controller: _address,
-                    ),
-                    const SizedBox(height: 12),
-                    InkWell(
-                      onTap: _pickLocation,
-                      child: Container(
-                        width: double.infinity,
-                        height: 76,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColors.beige,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.border),
-                        ),
+                        ],
+                      ),
+
+                      // 5) الحي
+                      const FormFieldLabel('الحي', required: true),
+                      AppTextField(
+                        controller: _district,
+                        hint: 'مثال: العليا',
+                        validator: (v) => _requiredText(v, 'الحي مطلوب'),
+                      ),
+
+                      // 6) الشارع
+                      const FormFieldLabel('الشارع'),
+                      AppTextField(
+                        controller: _address,
+                        hint: 'الشارع و اقرب معلم',
+                      ),
+
+                      // 7) الموقع على الخريطة
+                      const SizedBox(height: 12),
+                      DashedBox(
+                        onTap: _pickLocation,
+                        hasError: mapError,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -257,89 +332,114 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                               style: const TextStyle(
                                   fontSize: 12, color: AppColors.textMuted),
                             ),
+                            const Text('*',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.danger)),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    const FieldLabel('الإيجار السنوي (ر.س)'),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomTextField(
-                            hint: 'السعر المطلوب',
-                            controller: _price,
-                            focusNode: _priceFocus,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: digits,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        InkWell(
-                          onTap: _suggestPrice,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            height: 48,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: AppColors.beigeSoft,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.auto_awesome,
-                                    size: 14, color: AppColors.primary),
-                                SizedBox(width: 4),
-                                Text('سعر مقترح',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w600)),
-                              ],
+                      if (mapError)
+                        const FieldErrorText('الموقع على الخريطة مطلوب'),
+
+                      // 8) الإيجار + سعر مقترح
+                      const FormFieldLabel('الإيجار السنوي (ر.س)',
+                          required: true),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              hint: 'السعر المطلوب',
+                              controller: _price,
+                              focusNode: _priceFocus,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: digits,
+                              validator: (v) =>
+                                  _requiredNumber(v, 'الإيجار مطلوب'),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: _suggestPrice,
+                            borderRadius: BorderRadius.circular(kFieldRadius),
+                            child: Container(
+                              height: 56,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.beigeSoft,
+                                borderRadius:
+                                    BorderRadius.circular(kFieldRadius),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.auto_awesome,
+                                      size: 14, color: AppColors.primary),
+                                  SizedBox(width: 4),
+                                  Text('سعر مقترح',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // 9) الوصف
+                      const FormFieldLabel('الوصف'),
+                      AppTextField(
+                        controller: _description,
+                        hint: 'الواجهه، الحالة',
+                        maxLines: 2,
+                      ),
+
+                      // 10) المواقف
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(kFieldRadius),
+                          border:
+                              Border.all(color: AppColors.border, width: 1.5),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    CustomTextField(
-                      label: 'الوصف',
-                      hint: 'الواجهة، المواقف، الحالة',
-                      controller: _description,
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                        child: SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Row(
+                            children: [
+                              Text('يوجد مواقف',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.textDark)),
+                            ],
+                          ),
+                          value: _hasParking,
+                          activeColor: AppColors.primary,
+                          onChanged: (v) => setState(() => _hasParking = v),
+                        ),
                       ),
-                      child: SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('يوجد مواقف',
-                            style: TextStyle(
-                                fontSize: 14, color: AppColors.textDark)),
-                        value: _hasParking,
-                        activeColor: AppColors.primary,
-                        onChanged: (v) => setState(() => _hasParking = v),
+
+                      // 11) الصور
+                      const SizedBox(height: 14),
+                      ImagePickerSection(
+                        images: _images,
+                        mainIndex: _mainImage,
+                        onImagesChanged: (v) => setState(() => _images = v),
+                        onMainChanged: (v) => setState(() => _mainImage = v),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    ImagePickerSection(
-                      images: _images,
-                      mainIndex: _mainImage,
-                      onImagesChanged: (v) => setState(() => _images = v),
-                      onMainChanged: (v) => setState(() => _mainImage = v),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
+            // 12) زر النشر
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
               child: CustomButton(

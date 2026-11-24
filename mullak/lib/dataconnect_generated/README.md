@@ -650,7 +650,11 @@ The builder pattern allows Data Connect to distinguish between fields that haven
 ```dart
 class CreatePropertyVariablesBuilder {
   ...
-   CreatePropertyVariablesBuilder estimatedPrice(double? t) {
+   CreatePropertyVariablesBuilder activityType(String? t) {
+   _activityType.value = t;
+   return this;
+  }
+  CreatePropertyVariablesBuilder estimatedPrice(double? t) {
    _estimatedPrice.value = t;
    return this;
   }
@@ -679,6 +683,7 @@ MullakConnector.instance.createProperty(
   latitude: latitude,
   longitude: longitude,
 )
+.activityType(activityType)
 .estimatedPrice(estimatedPrice)
 .address(address)
 .description(description)
@@ -767,7 +772,11 @@ The builder pattern allows Data Connect to distinguish between fields that haven
 ```dart
 class UpdateMyPropertyVariablesBuilder {
   ...
-   UpdateMyPropertyVariablesBuilder estimatedPrice(double? t) {
+   UpdateMyPropertyVariablesBuilder activityType(String? t) {
+   _activityType.value = t;
+   return this;
+  }
+  UpdateMyPropertyVariablesBuilder estimatedPrice(double? t) {
    _estimatedPrice.value = t;
    return this;
   }
@@ -796,6 +805,7 @@ MullakConnector.instance.updateMyProperty(
   latitude: latitude,
   longitude: longitude,
 )
+.activityType(activityType)
 .estimatedPrice(estimatedPrice)
 .address(address)
 .description(description)

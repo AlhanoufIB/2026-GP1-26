@@ -35,6 +35,7 @@ type Property @table(name: "properties") {
   district: String! @col(dataType: "varchar(100)")
   city: String! @col(dataType: "varchar(100)")
   propertyType: String! @col(dataType: "varchar(50)")   # shop | office | kiosk | warehouse
+  activityType: String
   areaSqm: Float!
   rentPrice: Float!
   status: String! @default(value: "available") @col(dataType: "varchar(20)")  # available | rented | hidden

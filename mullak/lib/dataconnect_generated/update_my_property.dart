@@ -5,6 +5,7 @@ class UpdateMyPropertyVariablesBuilder {
   String title;
   String district;
   String propertyType;
+  Optional<String> _activityType = Optional.optional(nativeFromJson, nativeToJson);
   double areaSqm;
   double rentPrice;
   double latitude;
@@ -14,7 +15,11 @@ class UpdateMyPropertyVariablesBuilder {
   Optional<String> _description = Optional.optional(nativeFromJson, nativeToJson);
   Optional<bool> _hasParking = Optional.optional(nativeFromJson, nativeToJson);
 
-  final FirebaseDataConnect _dataConnect;  UpdateMyPropertyVariablesBuilder estimatedPrice(double? t) {
+  final FirebaseDataConnect _dataConnect;  UpdateMyPropertyVariablesBuilder activityType(String? t) {
+   _activityType.value = t;
+   return this;
+  }
+  UpdateMyPropertyVariablesBuilder estimatedPrice(double? t) {
    _estimatedPrice.value = t;
    return this;
   }
@@ -39,7 +44,7 @@ class UpdateMyPropertyVariablesBuilder {
   }
 
   MutationRef<UpdateMyPropertyData, UpdateMyPropertyVariables> ref() {
-    UpdateMyPropertyVariables vars= UpdateMyPropertyVariables(id: id,title: title,district: district,propertyType: propertyType,areaSqm: areaSqm,rentPrice: rentPrice,latitude: latitude,longitude: longitude,estimatedPrice: _estimatedPrice,address: _address,description: _description,hasParking: _hasParking,);
+    UpdateMyPropertyVariables vars= UpdateMyPropertyVariables(id: id,title: title,district: district,propertyType: propertyType,activityType: _activityType,areaSqm: areaSqm,rentPrice: rentPrice,latitude: latitude,longitude: longitude,estimatedPrice: _estimatedPrice,address: _address,description: _description,hasParking: _hasParking,);
     return _dataConnect.mutation("UpdateMyProperty", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -84,6 +89,7 @@ class UpdateMyPropertyVariables {
   final String title;
   final String district;
   final String propertyType;
+  late final Optional<String>activityType;
   final double areaSqm;
   final double rentPrice;
   final double latitude;
@@ -107,6 +113,10 @@ class UpdateMyPropertyVariables {
   
   
   
+  
+  
+    activityType = Optional.optional(nativeFromJson, nativeToJson);
+    activityType.value = json['activityType'] == null ? null : nativeFromJson<String>(json['activityType']);
   
   
   
@@ -143,6 +153,7 @@ class UpdateMyPropertyVariables {
     title == otherTyped.title && 
     district == otherTyped.district && 
     propertyType == otherTyped.propertyType && 
+    activityType == otherTyped.activityType && 
     areaSqm == otherTyped.areaSqm && 
     rentPrice == otherTyped.rentPrice && 
     latitude == otherTyped.latitude && 
@@ -154,7 +165,7 @@ class UpdateMyPropertyVariables {
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, district.hashCode, propertyType.hashCode, areaSqm.hashCode, rentPrice.hashCode, latitude.hashCode, longitude.hashCode, estimatedPrice.hashCode, address.hashCode, description.hashCode, hasParking.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, district.hashCode, propertyType.hashCode, activityType.hashCode, areaSqm.hashCode, rentPrice.hashCode, latitude.hashCode, longitude.hashCode, estimatedPrice.hashCode, address.hashCode, description.hashCode, hasParking.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -163,6 +174,9 @@ class UpdateMyPropertyVariables {
     json['title'] = nativeToJson<String>(title);
     json['district'] = nativeToJson<String>(district);
     json['propertyType'] = nativeToJson<String>(propertyType);
+    if(activityType.state == OptionalState.set) {
+      json['activityType'] = activityType.toJson();
+    }
     json['areaSqm'] = nativeToJson<double>(areaSqm);
     json['rentPrice'] = nativeToJson<double>(rentPrice);
     json['latitude'] = nativeToJson<double>(latitude);
@@ -187,6 +201,7 @@ class UpdateMyPropertyVariables {
     required this.title,
     required this.district,
     required this.propertyType,
+    required this.activityType,
     required this.areaSqm,
     required this.rentPrice,
     required this.latitude,

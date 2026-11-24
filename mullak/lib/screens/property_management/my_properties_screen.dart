@@ -18,13 +18,38 @@ class MyPropertiesScreen extends StatefulWidget {
 
 class _MyPropertiesScreenState extends State<MyPropertiesScreen> {
   final _service = PropertyService.instance;
-  late Future<List<PropertySummary>> _future = _service.listMyProperties();
 
+  List<PropertySummary> _items = [];
+  bool _loading = true;
+  bool _loadFailed = false;
+  bool _busy = false;
   String? _bannerText;
   bool _bannerIsError = false;
-  bool _deleting = false;
 
-  void _reload() => setState(() => _future = _service.listMyProperties());
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final list = await _service.listMyProperties();
+      if (!mounted) return;
+      setState(() {
+        _items = list;
+        _loading = false;
+        _loadFailed = false;
+      });
+    } catch (e, st) {
+      debugPrint('LIST ERROR: $e\n$st');
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadFailed = true;
+      });
+    }
+  }
 
   void _showBanner(String text, {bool error = false}) {
     setState(() {
@@ -36,17 +61,17 @@ class _MyPropertiesScreenState extends State<MyPropertiesScreen> {
     });
   }
 
-    Future<void> _addProperty() async {
+  Future<void> _addProperty() async {
     final ok = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const PropertyFormScreen()),
     );
     if (!mounted) return;
-    _reload();
+    await _load(); // القائمة محدثة قبل ما يشوفها المستخدم
     if (ok == true) _showBanner('تم إضافة العقار بنجاح');
   }
 
-    Future<void> _editProperty(PropertySummary summary) async {
+  Future<void> _editProperty(PropertySummary summary) async {
     Property? property;
     try {
       property = await _service.getProperty(summary.id);
@@ -57,6 +82,7 @@ class _MyPropertiesScreenState extends State<MyPropertiesScreen> {
     }
     if (property == null) {
       _showBanner('العقار غير موجود', error: true);
+      await _load();
       return;
     }
     if (!mounted) return;
@@ -67,29 +93,64 @@ class _MyPropertiesScreenState extends State<MyPropertiesScreen> {
           builder: (_) => PropertyFormScreen(property: property)),
     );
     if (!mounted) return;
-    _reload();
+    await _load();
     if (ok == true) _showBanner('تم حفظ التعديلات بنجاح');
   }
 
   Future<void> _deleteProperty(PropertySummary property) async {
-    if (_deleting) return;
+    if (_busy) return;
     final confirmed = await showDeletePropertyDialog(context);
     if (!confirmed) return;
 
-    setState(() => _deleting = true);
+    setState(() => _busy = true);
     try {
-      // الكرت ما يختفي إلا بعد نجاح الحذف في الداتابيس
-      await _service.deleteProperty(property.id);
+      await _service.deleteProperty(property.id); // يتأكد من الداتابيس
       if (!mounted) return;
-      _reload(); // نعيد التحميل من السيرفر عشان الواجهة = الداتابيس
+      setState(() => _items.removeWhere((p) => p.id == property.id));
       _showBanner('تم حذف العقار بنجاح');
     } catch (e, st) {
       debugPrint('DELETE ERROR: $e\n$st');
       if (!mounted) return;
       _showBanner('تعذّر حذف العقار، حاول مرة ثانية', error: true);
     } finally {
-      if (mounted) setState(() => _deleting = false);
+      if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Widget _body() {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loadFailed) {
+      return Center(
+        child: TextButton(
+          onPressed: () {
+            setState(() => _loading = true);
+            _load();
+          },
+          child: const Text('تعذّر التحميل، اضغط للمحاولة'),
+        ),
+      );
+    }
+    if (_items.isEmpty) {
+      return const Center(
+        child: Text('لا يوجد لديك عقارات بعد',
+            style: TextStyle(color: AppColors.textMuted)),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView.separated(
+        itemCount: _items.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (_, i) {
+          final p = _items[i];
+          return PropertyCard(
+            property: p,
+            onEdit: () => _editProperty(p),
+            onDelete: () => _deleteProperty(p),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -111,62 +172,18 @@ class _MyPropertiesScreenState extends State<MyPropertiesScreen> {
               ),
               const SizedBox(height: 12),
               if (_bannerText != null) _Banner(_bannerText!, _bannerIsError),
-              Expanded(
-                child: FutureBuilder<List<PropertySummary>>(
-                  future: _future,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      debugPrint('LIST ERROR: ${snapshot.error}');
-                      return Center(
-                        child: TextButton(
-                          onPressed: _reload,
-                          child: const Text('تعذّر التحميل، اضغط للمحاولة'),
-                        ),
-                      );
-                    }
-                    final properties = snapshot.data!;
-                    if (properties.isEmpty) {
-                      return const Center(
-                        child: Text('ما عندك عقارات بعد',
-                            style: TextStyle(color: AppColors.textMuted)),
-                      );
-                    }
-                    return RefreshIndicator(
-                      onRefresh: () async => _reload(),
-                      child: ListView.separated(
-                        itemCount: properties.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 12),
-                        itemBuilder: (_, i) {
-                          final p = properties[i];
-                          return PropertyCard(
-                            property: p,
-                            onEdit: () => _editProperty(p),
-                            onDelete: () => _deleteProperty(p),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
+              Expanded(child: _body()),
               CustomButton(text: 'إضافة عقار +', onPressed: _addProperty),
               const SizedBox(height: 12),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(
-        current: AppTab.myProperties,
-      ),
+      bottomNavigationBar: const AppBottomNav(current: AppTab.myProperties),
     );
   }
 }
 
-/// بنر النجاح (أخضر ✓) أو الخطأ (أحمر ✕)
 class _Banner extends StatelessWidget {
   final String text;
   final bool isError;
@@ -180,10 +197,8 @@ class _Banner extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
       child: Row(
         children: [
           Icon(isError ? Icons.close : Icons.check, size: 16, color: fg),

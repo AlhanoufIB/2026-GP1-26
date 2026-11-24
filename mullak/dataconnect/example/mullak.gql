@@ -61,6 +61,7 @@ mutation CreateProperty(
   $district: String!
   $city: String!
   $propertyType: String!
+  $activityType: String
   $areaSqm: Float!
   $rentPrice: Float!
   $latitude: Float!
@@ -76,6 +77,7 @@ mutation CreateProperty(
     district: $district
     city: $city
     propertyType: $propertyType
+    activityType: $activityType
     areaSqm: $areaSqm
     rentPrice: $rentPrice
     latitude: $latitude
@@ -92,6 +94,7 @@ mutation UpdateMyProperty(
   $title: String!
   $district: String!
   $propertyType: String!
+  $activityType: String
   $areaSqm: Float!
   $rentPrice: Float!
   $latitude: Float!
@@ -107,6 +110,7 @@ mutation UpdateMyProperty(
       title: $title
       district: $district
       propertyType: $propertyType
+      activityType: $activityType
       areaSqm: $areaSqm
       rentPrice: $rentPrice
       latitude: $latitude
@@ -184,6 +188,7 @@ query GetProperty($id: UUID!) @auth(level: USER) {
     district
     city
     propertyType
+    activityType
     areaSqm
     rentPrice
     status

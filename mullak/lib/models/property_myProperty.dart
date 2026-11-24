@@ -38,14 +38,15 @@ class PropertySummary {
             p.myCoverImage.isEmpty ? null : p.myCoverImage.first.imageUrl,
       );
 
-    String get shortId => listingNumber(id);
+  String get shortId => listingNumber(id);
 }
 
 /// تفاصيل العقار (من GetProperty) وللإضافة والتعديل
 class Property {
   final String id; // فاضي عند الإضافة
-  final String title;
+  final String title; // يكتبه المستخدم
   final String propertyType;
+  final String? activityType; // اختياري
   final double areaSqm;
   final String district;
   final String city;
@@ -63,6 +64,7 @@ class Property {
     this.id = '',
     required this.title,
     required this.propertyType,
+    this.activityType,
     required this.areaSqm,
     required this.district,
     this.city = kDefaultCity,
@@ -77,11 +79,7 @@ class Property {
     this.images = const [],
   });
 
-  /// العنوان يتركّب تلقائياً من النوع والحي
-  static String buildTitle(String propertyType, String district) =>
-      '$propertyType، $district';
-
-    String get shortId => listingNumber(id);
+  String get shortId => listingNumber(id);
 
   factory Property.fromGet(GetPropertyProperty p) {
     final images = p.images
@@ -93,6 +91,7 @@ class Property {
       id: p.id,
       title: p.title,
       propertyType: p.propertyType,
+      activityType: p.activityType, // يحتاج توليد الـ SDK بعد تعديل الـ schema
       areaSqm: p.areaSqm,
       district: p.district,
       city: p.city,
@@ -114,7 +113,7 @@ String formatNumber(int n) => n.toString().replaceAllMapped(
       (m) => ',',
     );
 
-    /// رقم عقار من 5 خانات (أرقام فقط) مشتق من المعرّف
+/// رقم عقار من 5 خانات (أرقام فقط) مشتق من المعرّف
 String listingNumber(String id) {
   final hex = id.replaceAll('-', '');
   if (hex.length < 8) return '00000';

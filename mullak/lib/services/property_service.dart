@@ -1,4 +1,3 @@
-import 'package:firebase_data_connect/firebase_data_connect.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_data_connect/firebase_data_connect.dart';
 import '../dataconnect_generated/generated.dart';
@@ -12,9 +11,12 @@ class PropertyService {
   final _connector = MullakConnector.instance;
   final _images = ImageUploadService.instance;
 
-   Future<List<PropertySummary>> listMyProperties() async {
-    final ref = _connector.listMyProperties().ref();
-    final r = await ref.execute(fetchPolicy: QueryFetchPolicy.serverOnly);
+  /// عقاراتي من السيرفر مباشرة (بدون كاش)
+  Future<List<PropertySummary>> listMyProperties() async {
+    final r = await _connector
+        .listMyProperties()
+        .ref()
+        .execute(fetchPolicy: QueryFetchPolicy.serverOnly);
     return r.data.properties
         .map(PropertySummary.fromList)
         .where((p) => p.status != 'hidden')
@@ -22,7 +24,7 @@ class PropertyService {
   }
 
   Future<Property?> getProperty(String id) async {
-        final r = await _connector
+    final r = await _connector
         .getProperty(id: id)
         .ref()
         .execute(fetchPolicy: QueryFetchPolicy.serverOnly);
@@ -40,7 +42,6 @@ class PropertyService {
     return ordered;
   }
 
-  /// يرفع الملفات الجديدة ويرجّع روابط نهائية (الموجودة تبقى كما هي)
   Future<List<String>> _uploadAll(List<String> ordered) async {
     final urls = <String>[];
     for (final path in ordered) {
@@ -53,22 +54,17 @@ class PropertyService {
     for (var i = 0; i < urls.length; i++) {
       await _connector
           .addPropertyImage(
-            propertyId: propertyId,
-            imageUrl: urls[i],
-            displayOrder: i + 1,
-          )
+              propertyId: propertyId, imageUrl: urls[i], displayOrder: i + 1)
           .execute();
     }
   }
 
-  /// يضيف عقار. الصور تُرفع أول، ولو فشل شي بعد الإنشاء يُخفى العقار.
   Future<String> createProperty(
     Property p, {
     required List<String> imagePaths,
     required int mainIndex,
   }) async {
     final urls = await _uploadAll(_order(imagePaths, mainIndex));
-
     String? id;
     try {
       final res = await _connector
@@ -84,6 +80,7 @@ class PropertyService {
           )
           .estimatedPrice(p.estimatedPrice)
           .address(_nullIfEmpty(p.address))
+          .activityType(p.activityType)
           .description(_nullIfEmpty(p.description))
           .hasParking(p.hasParking)
           .execute();
@@ -93,17 +90,9 @@ class PropertyService {
     } catch (e) {
       if (id != null) {
         try {
-          await _connector
-              .deleteMyPropertyImages(propertyId: id)
-              .execute();
+          await _connector.deleteMyPropertyImages(propertyId: id).execute();
           await _connector.deleteMyProperty(id: id).execute();
-        } catch (_) {
-          try {
-            await _connector
-                .updateMyPropertyStatus(id: id, status: 'hidden')
-                .execute();
-          } catch (_) {}
-        }
+        } catch (_) {}
       }
       rethrow;
     }
@@ -115,7 +104,6 @@ class PropertyService {
     required int mainIndex,
   }) async {
     final urls = await _uploadAll(_order(imagePaths, mainIndex));
-
     await _connector
         .updateMyProperty(
           id: p.id,
@@ -129,15 +117,15 @@ class PropertyService {
         )
         .estimatedPrice(p.estimatedPrice)
         .address(_nullIfEmpty(p.address))
+        .activityType(p.activityType)
         .description(_nullIfEmpty(p.description))
         .hasParking(p.hasParking)
         .execute();
-
     await _connector.deleteMyPropertyImages(propertyId: p.id).execute();
     await _addImageRecords(p.id, urls);
   }
 
-    /// حذف نهائي. النجاح يُحكم عليه بحالة الداتابيس.
+  /// حذف نهائي. النجاح = العقار ما عاد موجود في قائمة السيرفر.
   Future<void> deleteProperty(String id) async {
     try {
       await _connector.deleteMyPropertyImages(propertyId: id).execute();
@@ -149,15 +137,8 @@ class PropertyService {
     } catch (e) {
       debugPrint('DELETE PROPERTY CALL: $e');
     }
-
-    // نتحقق: لو القراءة رجّعت null أو رمت خطأ، يعني العقار انحذف
-    Property? still;
-    try {
-      still = await getProperty(id);
-    } catch (_) {
-      still = null;
-    }
-    if (still != null) {
+    final list = await listMyProperties();
+    if (list.any((p) => p.id == id)) {
       throw Exception('العقار ما انحذف من الداتابيس');
     }
   }
