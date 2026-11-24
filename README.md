@@ -41,7 +41,7 @@ Planned for Release 2:
 | Authentication | Firebase Authentication |
 | Main database | PostgreSQL (Cloud SQL) accessed through Firebase SQL Connect |
 | Chat | Cloud Firestore |
-| Images | Cloud Storage for Firebase |
+| Images | Cloudinary |
 | Maps | flutter_map with OpenStreetMap tiles |
 | Data preparation and AI models | Python, Google Colab |
 
