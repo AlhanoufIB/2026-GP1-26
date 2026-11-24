@@ -243,7 +243,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
           'نرتّب لك العقارات حسب مدى ملاءمتها لمتطلباتك.',
           style: TextStyle(fontSize: 14, color: AppColors.hint),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 10),
         const Text(
           '* حقول مطلوبة',
           style: TextStyle(fontSize: 12, color: AppColors.error),
