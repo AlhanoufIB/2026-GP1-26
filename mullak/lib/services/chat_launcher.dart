@@ -19,11 +19,12 @@ class ChatLauncher {
       final propertyService = ChatPropertyService.instance;
 
       // Property IDs in Data Connect are UUIDs.
+            // Data Connect UUIDs come with or without dashes.
       final uuidPattern = RegExp(
-        r'^[0-9a-fA-F]{8}-'
-        r'[0-9a-fA-F]{4}-'
-        r'[0-9a-fA-F]{4}-'
-        r'[0-9a-fA-F]{4}-'
+        r'^[0-9a-fA-F]{8}-?'
+        r'[0-9a-fA-F]{4}-?'
+        r'[0-9a-fA-F]{4}-?'
+        r'[0-9a-fA-F]{4}-?'
         r'[0-9a-fA-F]{12}$',
       );
 
