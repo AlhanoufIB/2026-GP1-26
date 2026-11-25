@@ -8,7 +8,7 @@ class BusinessRequirement {
   final double requiredSpace; // min area in m², > 0
   final String? preferredLocation; // optional district/area
 
-  /// PENDING TEAM DECISION: not in the data dictionary yet ("متطلبات أخرى").
+
   final String? otherRequirements;
 
   const BusinessRequirement({

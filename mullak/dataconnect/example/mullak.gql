@@ -66,7 +66,7 @@ mutation CreateProperty(
   $rentPrice: Float!
   $latitude: Float!
   $longitude: Float!
-  $estimatedPrice: Float          
+  $estimatedPrice: Float
   $address: String
   $description: String
   $hasParking: Boolean
@@ -82,7 +82,7 @@ mutation CreateProperty(
     rentPrice: $rentPrice
     latitude: $latitude
     longitude: $longitude
-    estimatedPrice: $estimatedPrice   
+    estimatedPrice: $estimatedPrice
     address: $address
     description: $description
     hasParking: $hasParking
@@ -175,7 +175,7 @@ query ListMyProperties @auth(level: USER) {
     title
     status
     rentPrice
-    areaSqm            
+    areaSqm
     address
     myCoverImage: images_on_property(orderBy: [{ displayOrder: ASC }], limit: 1) { imageUrl }
   }
@@ -265,9 +265,9 @@ query GetMySavedPropertyIds @auth(level: USER) {
 }
 
 
-# ---------------- PROPERTY DISCOVERY (Student 4) ----------------
-# Full property data (all photos + description) for Explore, Details,
-# Saved, Compare and Recommendations.
+# ---------------- PROPERTY DISCOVERY  ----------------
+# Full property data (all photos + description + parking) for Explore,
+# Details, Saved, Compare and Recommendations.
 
 query ListDiscoveryProperties @auth(level: USER) {
   properties(where: { status: { eq: "available" } }) {
@@ -284,6 +284,7 @@ query ListDiscoveryProperties @auth(level: USER) {
     estimatedPrice
     address
     description
+    hasParking
     owner { id }
     images: images_on_property(orderBy: [{ displayOrder: ASC }]) { imageUrl }
   }
@@ -304,13 +305,14 @@ query ListPropertiesByIds($ids: [UUID!]!) @auth(level: USER) {
     estimatedPrice
     address
     description
+    hasParking
     owner { id }
     images: images_on_property(orderBy: [{ displayOrder: ASC }]) { imageUrl }
   }
 }
 
 
-# ---------------- REQUIREMENTS + RECOMMENDATIONS (Student 4) ----------------
+# ---------------- REQUIREMENTS + RECOMMENDATIONS ----------------
 
 mutation CreateBusinessRequirement(
   $businessType: String!

@@ -11,8 +11,7 @@ class Recommendation {
   final String explanation; // why it was recommended
   final int rank; // 1 = best
 
-  /// Short labels shown on the card, e.g. "ضمن الميزانية".
-  /// PENDING TEAM DECISION: not stored in the data dictionary yet.
+
   final List<String> tags;
 
   const Recommendation({
