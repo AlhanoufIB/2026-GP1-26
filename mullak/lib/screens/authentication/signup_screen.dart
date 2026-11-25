@@ -6,6 +6,7 @@ import '../../utils/validators.dart';
 import 'widgets/app_logo.dart';
 import 'widgets/bottom_switch_link.dart';
 import 'widgets/labeled_field.dart';
+import 'widgets/password_rules_checklist.dart';
 import 'widgets/primary_button.dart';
 import 'login_screen.dart';
 
@@ -55,7 +56,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         return;
       }
       await auth.signUp(
-        name: _nameCtrl.text.trim(),
+        name: cleanName(_nameCtrl.text),
         phone: phone,
         password: _passCtrl.text,
       );
@@ -92,6 +93,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: IntrinsicHeight(
                   child: Form(
                     key: _formKey,
+                    // validate each field on every keystroke after the first edit
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -125,9 +128,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           label: 'الاسم الكامل',
                           hint: 'اكتب اسمك الكامل',
                           controller: _nameCtrl,
-                          validator: (v) => (v == null || v.trim().length < 3)
-                              ? 'الرجاء إدخال الاسم الكامل'
-                              : null,
+                          maxLength: nameMaxLength + 10,
+                          validator: validateFullName,
                         ),
                         const SizedBox(height: 14),
                         LabeledField(
@@ -137,17 +139,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           controller: _phoneCtrl,
                           forceLtr: true,
                           keyboardType: TextInputType.phone,
+                          inputFormatters: [PhoneInputFormatter()],
                           validator: validatePhone,
                         ),
                         const SizedBox(height: 14),
                         LabeledField(
                           isRequired: true,
                           label: 'كلمة المرور',
-                          hint: '٨ خانات على الأقل',
+                          hint: 'كلمة مرور قوية',
                           controller: _passCtrl,
                           isPassword: true,
-                          validator: validatePassword,
+                          maxLength: passwordMaxLength + 1,
+                          validator: (v) =>
+                              validateNewPassword(v, phone: _phoneCtrl.text),
                         ),
+                        const SizedBox(height: 6),
+                        PasswordRulesChecklist(controller: _passCtrl),
                         const SizedBox(height: 14),
                         LabeledField(
                           isRequired: true,
@@ -156,6 +163,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           controller: _confirmCtrl,
                           isPassword: true,
                           textInputAction: TextInputAction.done,
+                          maxLength: passwordMaxLength + 1,
                           validator: (v) {
                             if (v == null || v.isEmpty) {
                               return 'الرجاء تأكيد كلمة المرور';

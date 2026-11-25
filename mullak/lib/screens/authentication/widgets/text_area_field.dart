@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../theme/app_colors.dart';
 import 'field_label.dart';
@@ -15,6 +16,9 @@ class TextAreaField extends StatelessWidget {
   /// Shows a red * next to the label.
   final bool isRequired;
 
+  /// Checked on every keystroke once the user starts typing.
+  final String? Function(String?)? validator;
+
   const TextAreaField({
     super.key,
     required this.label,
@@ -22,6 +26,7 @@ class TextAreaField extends StatelessWidget {
     required this.controller,
     this.lines = 4,
     this.isRequired = false,
+    this.validator,
   });
 
   OutlineInputBorder _border(Color color, {double width = 1.2}) =>
@@ -37,11 +42,14 @@ class TextAreaField extends StatelessWidget {
       children: [
         FieldLabel(label, isRequired: isRequired),
         const SizedBox(height: 8),
-        TextField(
+        TextFormField(
           controller: controller,
+          validator: validator,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           minLines: lines,
           maxLines: lines,
           maxLength: 600,
+          maxLengthEnforcement: MaxLengthEnforcement.enforced,
           keyboardType: TextInputType.multiline,
           textInputAction: TextInputAction.newline,
           cursorColor: AppColors.brown,
@@ -49,12 +57,17 @@ class TextAreaField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(fontSize: 13, color: AppColors.hint),
-            counterText: '', // hides the "0/600" counter
+            // live "n/600" counter
+            counterStyle: const TextStyle(fontSize: 11, color: AppColors.hint),
+            errorStyle: const TextStyle(fontSize: 11.5, height: 1.3),
+            errorMaxLines: 2,
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.all(14),
             enabledBorder: _border(AppColors.border),
             focusedBorder: _border(AppColors.brown, width: 1.6),
+            errorBorder: _border(AppColors.error.withValues(alpha: 0.7)),
+            focusedErrorBorder: _border(AppColors.error, width: 1.6),
           ),
         ),
       ],

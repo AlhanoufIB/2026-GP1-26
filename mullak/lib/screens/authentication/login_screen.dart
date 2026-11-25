@@ -109,6 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: IntrinsicHeight(
                   child: Form(
                     key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -146,6 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _phoneCtrl,
                           forceLtr: true,
                           keyboardType: TextInputType.phone,
+                          inputFormatters: [PhoneInputFormatter()],
                           validator: validatePhone,
                         ),
                         const SizedBox(height: 14),

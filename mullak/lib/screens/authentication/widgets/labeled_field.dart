@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../theme/app_colors.dart';
 import 'field_label.dart';
@@ -14,6 +15,8 @@ class LabeledField extends StatefulWidget {
   final TextInputAction textInputAction;
   final String? Function(String?)? validator;
   final bool isRequired; // shows a red * next to the label
+  final List<TextInputFormatter>? inputFormatters; // filters typing
+  final int? maxLength; // hard limit on typed characters (no counter)
 
   const LabeledField({
     super.key,
@@ -26,6 +29,8 @@ class LabeledField extends StatefulWidget {
     this.textInputAction = TextInputAction.next,
     this.validator,
     this.isRequired = false,
+    this.inputFormatters,
+    this.maxLength,
   });
 
   @override
@@ -56,6 +61,8 @@ class _LabeledFieldState extends State<LabeledField> {
           keyboardType: widget.keyboardType,
           textInputAction: widget.textInputAction,
           validator: widget.validator,
+          inputFormatters: widget.inputFormatters,
+          maxLength: widget.maxLength,
           cursorColor: AppColors.brown,
           textDirection: widget.forceLtr ? TextDirection.ltr : null,
           textAlign: widget.forceLtr ? TextAlign.right : TextAlign.start,
@@ -65,6 +72,8 @@ class _LabeledFieldState extends State<LabeledField> {
             hintTextDirection: widget.forceLtr ? TextDirection.ltr : null,
             hintStyle: const TextStyle(fontSize: 13.5, color: AppColors.hint),
             errorStyle: const TextStyle(fontSize: 11.5, height: 1.3),
+            errorMaxLines: 2,
+            counterText: '',
             filled: true,
             fillColor: Colors.white,
             isDense: true,

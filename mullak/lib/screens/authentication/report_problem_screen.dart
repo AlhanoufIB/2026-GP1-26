@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 
 import '../../theme/app_colors.dart';
+import '../../utils/validators.dart';
 import '../../widgets/app_bottom_nav.dart';
 import 'feedback_service.dart';
 import 'widgets/back_link.dart';
@@ -27,6 +28,16 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
   ];
 
   int? _selected;
+  final _formKey = GlobalKey<FormState>();
+  bool _triedSend = false; // show "choose a type" only after a send attempt
+
+  bool get _isOther => _selected == _types.length - 1;
+
+  String? _detailsValidator(String? v) => validateFreeText(
+        v,
+        required: _isOther,
+        emptyMessage: 'اشرح المشكلة في خانة التفاصيل عند اختيار "أخرى"',
+      );
   final _detailsCtrl = TextEditingController();
   bool _sending = false;
 
@@ -46,16 +57,10 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
   Future<void> _send() async {
     FocusScope.of(context).unfocus();
 
-    if (_selected == null) {
-      _snack('اختر نوع المشكلة');
-      return;
-    }
+    setState(() => _triedSend = true);
+    final detailsOk = _formKey.currentState!.validate();
+    if (_selected == null || !detailsOk) return;
     final details = _detailsCtrl.text.trim();
-    final isOther = _selected == _types.length - 1;
-    if (isOther && details.isEmpty) {
-      _snack('اشرح المشكلة في خانة التفاصيل');
-      return;
-    }
 
     setState(() => _sending = true);
     final messenger = ScaffoldMessenger.of(context);
@@ -88,7 +93,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
               hasScrollBody: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                child: Column(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const BackLink(),
@@ -114,17 +121,32 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                       _ProblemOption(
                         text: _types[i],
                         selected: _selected == i,
-                        onTap: () => setState(() => _selected = i),
+                        onTap: () {
+                          setState(() => _selected = i);
+                          // re-check details now that the type changed
+                          if (_triedSend || _detailsCtrl.text.isNotEmpty) {
+                            _formKey.currentState?.validate();
+                          }
+                        },
                       ),
                     ],
+                    if (_triedSend && _selected == null)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          'اختر نوع المشكلة',
+                          style: TextStyle(fontSize: 11.5, color: AppColors.error),
+                        ),
+                      ),
                     const SizedBox(height: 26),
                     TextAreaField(
                       label: 'التفاصيل',
                       // required only when "other" is chosen
-                      isRequired: _selected == _types.length - 1,
+                      isRequired: _isOther,
                       hint: 'اشرح المشكلة',
                       controller: _detailsCtrl,
                       lines: 4,
+                      validator: _detailsValidator,
                     ),
                     const Spacer(),
                     const SizedBox(height: 20),
@@ -134,6 +156,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                       onPressed: _send,
                     ),
                   ],
+                  ),
                 ),
               ),
             ),
