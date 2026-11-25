@@ -4,6 +4,7 @@ import '../../services/price_estimation_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/back_link.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/app_bottom_nav.dart';
 
 /// نتيجة الشاشة:
 /// - use: المستخدم اختار السعر المقترح (price = estimated)
@@ -85,6 +86,7 @@ class SuggestedPriceScreen extends StatelessWidget {
           ),
         ),
       ),
+      bottomNavigationBar: const AppBottomNav(current: AppTab.myProperties),
     );
   }
 }
@@ -156,13 +158,14 @@ class _InfoCard extends StatelessWidget {
                   color: AppColors.textDark)),
           const SizedBox(height: 8),
           _row('مساحة العقار ونوعه', '$type · $area م²'),
-          _row('الموقع', district.isEmpty ? '—' : district),
+          _row('الموقع', district.trim().isEmpty ? '—' : district.trim()),
           _row('أسعار الإيجار القريبة', 'بيانات السوق', last: true),
         ],
       ),
     );
   }
 
+  /// كل القيم تنحاز لنفس الحافة (اليسرى في RTL) بغض النظر عن طول العنوان أو القيمة.
   Widget _row(String label, String value, {bool last = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -176,9 +179,10 @@ class _InfoCard extends StatelessWidget {
           Text(label,
               style:
                   const TextStyle(fontSize: 12, color: AppColors.textDark)),
-          const Spacer(),
-          Flexible(
+          const SizedBox(width: 12),
+          Expanded(
             child: Text(value,
+                textAlign: TextAlign.end,
                 style: const TextStyle(
                     fontSize: 12, color: AppColors.textMuted)),
           ),

@@ -60,6 +60,9 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   late final TextEditingController _address;
   late final TextEditingController _price;
   late final TextEditingController _description;
+  final _titleFocus = FocusNode();
+  final _areaFocus = FocusNode();
+  final _districtFocus = FocusNode();
   final _priceFocus = FocusNode();
 
   List<String> _images = [];
@@ -98,6 +101,9 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     _address.dispose();
     _price.dispose();
     _description.dispose();
+    _titleFocus.dispose();
+    _areaFocus.dispose();
+    _districtFocus.dispose();
     _priceFocus.dispose();
     super.dispose();
   }
@@ -106,13 +112,39 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
-  String? _requiredText(String? v, String msg) =>
-      (v == null || v.trim().isEmpty) ? msg : null;
+  // ───────── التحقق الفوري (يظهر للمستخدم أثناء الكتابة، قبل الإرسال) ─────────
+  String? _vTitle(String? v) {
+    final t = (v ?? '').trim();
+    if (t.isEmpty) return 'العنوان مطلوب';
+    if (t.length < 3) return 'العنوان قصير جداً (3 أحرف على الأقل)';
+    if (t.length > 80) return 'العنوان طويل (الحد الأقصى 80 حرفاً)';
+    return null;
+  }
 
-  String? _requiredNumber(String? v, String msg) {
-    if (v == null || v.trim().isEmpty) return msg;
-    final n = int.tryParse(v.trim());
-    return (n == null || n <= 0) ? 'أدخل رقماً صحيحاً' : null;
+  String? _vArea(String? v) {
+    final t = (v ?? '').trim();
+    if (t.isEmpty) return 'المساحة مطلوبة';
+    final n = int.tryParse(t);
+    if (n == null) return 'أدخل أرقاماً فقط';
+    if (n <= 0) return 'المساحة يجب أن تكون أكبر من 0';
+    return null;
+  }
+
+  String? _vDistrict(String? v) {
+    final t = (v ?? '').trim();
+    if (t.isEmpty) return 'الحي مطلوب';
+    if (t.length < 2) return 'اسم الحي قصير جداً';
+    if (RegExp(r'^[0-9\s]+$').hasMatch(t)) return 'اسم الحي لا يمكن أن يكون أرقاماً فقط';
+    return null;
+  }
+
+  String? _vPrice(String? v) {
+    final t = (v ?? '').trim();
+    if (t.isEmpty) return 'الإيجار مطلوب';
+    final n = int.tryParse(t);
+    if (n == null) return 'أدخل أرقاماً فقط';
+    if (n <= 0) return 'الإيجار يجب أن يكون أكبر من 0';
+    return null;
   }
 
   Future<void> _suggestPrice() async {
@@ -154,10 +186,27 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
 
   Future<void> _submit() async {
     setState(() => _submitted = true);
-    final fieldsOk = _formKey.currentState!.validate();
-    final extraOk = _type != null && _latLng != null;
-    if (!fieldsOk || !extraOk) {
-      _showMessage('يرجى تعبئة جميع الحقول المطلوبة');
+    _formKey.currentState!.validate(); // يُظهر الأخطاء الحمراء تحت الحقول
+
+    // نجمع الحقول الخاطئة ونوجّه المستخدم لأول واحد
+    final problems = <String>[];
+    FocusNode? firstFocus;
+    void check(String label, bool bad, [FocusNode? f]) {
+      if (!bad) return;
+      problems.add(label);
+      firstFocus ??= f;
+    }
+
+    check('العنوان', _vTitle(_title.text) != null, _titleFocus);
+    check('المساحة', _vArea(_area.text) != null, _areaFocus);
+    check('نوع العقار', _type == null);
+    check('الحي', _vDistrict(_district.text) != null, _districtFocus);
+    check('الموقع على الخريطة', _latLng == null);
+    check('الإيجار', _vPrice(_price.text) != null, _priceFocus);
+
+    if (problems.isNotEmpty) {
+      _showMessage('يرجى تصحيح: ${problems.join('، ')}');
+      firstFocus?.requestFocus(); // يمرّر الشاشة للحقل الخاطئ تلقائياً
       return;
     }
 
@@ -214,6 +263,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
             Expanded(
               child: Form(
                 key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                   child: Column(
@@ -236,7 +286,8 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                       AppTextField(
                         controller: _title,
                         hint: 'العنوان',
-                        validator: (v) => _requiredText(v, 'العنوان مطلوب'),
+                        focusNode: _titleFocus,
+                        validator: _vTitle,
                       ),
 
                       // 2) المساحة
@@ -246,7 +297,8 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                         hint: 'مثال: 85',
                         keyboardType: TextInputType.number,
                         inputFormatters: digits,
-                        validator: (v) => _requiredNumber(v, 'المساحة مطلوبة'),
+                        focusNode: _areaFocus,
+                        validator: _vArea,
                       ),
 
                       // 3+4) نوع العقار + نوع النشاط (يعتمد على النوع)
@@ -299,7 +351,8 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                       AppTextField(
                         controller: _district,
                         hint: 'مثال: العليا',
-                        validator: (v) => _requiredText(v, 'الحي مطلوب'),
+                        focusNode: _districtFocus,
+                        validator: _vDistrict,
                       ),
 
                       // 6) الشارع
@@ -356,8 +409,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                               focusNode: _priceFocus,
                               keyboardType: TextInputType.number,
                               inputFormatters: digits,
-                              validator: (v) =>
-                                  _requiredNumber(v, 'الإيجار مطلوب'),
+                              validator: _vPrice,
                             ),
                           ),
                           const SizedBox(width: 8),
