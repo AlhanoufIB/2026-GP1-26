@@ -119,3 +119,20 @@ Planned for Release 2:
 - **RCRC Open Data Portal:** commercial activity and land-use data for Riyadh
 
 The data is used for academic, non-commercial purposes only.
+
+
+
+## Generative AI Disclosure
+
+In accordance with the IT496 Generative AI policy, this section discloses the use of Claude (Anthropic) in the development of the Mullak application source code. A complete declaration covering both the report and the code is provided in the *Generative AI Use Disclosure* section of the Release 1 project report.
+
+**Purpose:** Routine code assistance, including user interface improvements, input validation, and unit tests.
+
+**Components affected:** Files within `lib/screens/`, `lib/services/`, `lib/models/`, and `test/`.
+
+**Extent of use:** AI suggested code for specific UI improvements, validation logic, and tests requested by the team. The team adapted, integrated, and tested all suggested code within the application.
+
+### Team Responsibility
+
+The project team defined all requirements and design decisions, and reviewed every AI-assisted change before it was merged. The team remains fully responsible for the accuracy, correctness, and originality of the submitted code, and every team member is able to explain the implementation of the components listed above.
+
