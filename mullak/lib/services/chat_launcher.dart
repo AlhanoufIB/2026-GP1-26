@@ -80,7 +80,7 @@ class ChatLauncher {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'تعذر فتح المحادثة. تأكدي أن العقار موجود في قاعدة البيانات الحقيقية.',
+            'تعذر فتح المحادثة. تأكد أن العقار موجود في قاعدة البيانات الحقيقية.',
           ),
         ),
       );

@@ -71,14 +71,9 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
   late RangeValues _priceRange;
 
   late double _maxPrice;
-  late List<String> _availableTypes;
   late Set<String> _availableAreaRanges;
 
-  static const Map<String, String> _typeLabels = {
-    PropertyType.shop: 'محل تجاري',
-    PropertyType.office: 'مكتب',
-    PropertyType.kiosk: 'كشك',
-  };
+  static const List<String> _propertyTypes = PropertyType.all;
 
   static const Map<String, String> _areaLabels = {
     'under50': 'أقل من 50',
@@ -95,7 +90,7 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
 
     final initial = widget.initialFilters;
 
-    _selectedType = _availableTypes.contains(initial.propertyType)
+    _selectedType = _propertyTypes.contains(initial.propertyType)
         ? initial.propertyType
         : null;
 
@@ -121,13 +116,6 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
         _maxPrice = price;
       }
     }
-
-    // Only property types that actually exist in Firebase.
-    _availableTypes = properties
-        .map((property) => property.propertyType)
-        .toSet()
-        .toList()
-      ..sort();
 
     // Only area categories containing available properties.
     _availableAreaRanges = {};
@@ -355,25 +343,14 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
 
                     const SizedBox(height: 14),
 
-                    if (_availableTypes.isEmpty)
-                      const Text(
-                        'لا توجد أنواع عقارات متاحة حاليًا',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.hint,
-                        ),
-                      )
-                    else
-                      Wrap(
-                        spacing: 9,
-                        runSpacing: 10,
-                        children: _availableTypes.map((type) {
-                          return _typeChip(
-                            _typeLabels[type] ?? type,
-                            type,
-                          );
-                        }).toList(),
-                      ),
+                    Wrap(
+                      spacing: 9,
+                      runSpacing: 10,
+                      children: [
+                        for (final type in _propertyTypes)
+                          _typeChip(PropertyType.labelOf(type), type),
+                      ],
+                    ),
 
                     const SizedBox(height: 38),
 

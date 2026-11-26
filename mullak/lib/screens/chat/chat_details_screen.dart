@@ -275,7 +275,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'تعذر إرسال الرسالة. حاولي مرة أخرى.',
+            'تعذر إرسال الرسالة. حاول مرة أخرى.',
           ),
         ),
       );
@@ -455,7 +455,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
           if (snapshot.hasError) {
             return const Center(
               child: Text(
-                'تعذر تحميل الرسائل. تحققي من الاتصال.',
+                'تعذر تحميل الرسائل. تحقق من الاتصال.',
                 style: TextStyle(
                   fontSize: 13,
                   color: AppColors.hint,
