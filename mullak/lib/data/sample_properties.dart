@@ -35,6 +35,7 @@ const List<Property> sampleProperties = [
     district: 'الملقا',
     city: 'الرياض',
     propertyType: PropertyType.shop,
+    activityType: 'مقهى',
     areaSqm: 70,
     rentPrice: 72000,
     status: PropertyStatus.available,

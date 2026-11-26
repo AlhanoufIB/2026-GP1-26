@@ -10,7 +10,8 @@ import 'property_details_screen.dart';
 import 'saved_properties_screen.dart';
 import 'business_info_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
-
+import '../../widgets/primary_button.dart';
+import 'utils/discovery_formatters.dart';
 
 /// "استكشاف العقارات" — lets a business owner browse available properties.
 
@@ -65,9 +66,9 @@ class _ExplorePropertiesScreenState extends State<ExplorePropertiesScreen> {
                   const SizedBox(height: 28),
                   _buildSmartBanner(),
                   const SizedBox(height: 20),
-                  _buildChips(),
+                  _buildFilterBar(snapshot.data ?? const []),
                   const SizedBox(height: 16),
-                                   ..._buildResults(snapshot),
+                  ..._buildResults(snapshot),
                 ],
               );
             },
@@ -76,9 +77,7 @@ class _ExplorePropertiesScreenState extends State<ExplorePropertiesScreen> {
       ),
 
       // Bottom Navigation Bar
-      bottomNavigationBar: const AppBottomNav(
-  current: AppTab.explore,
-),
+      bottomNavigationBar: const AppBottomNav(current: AppTab.explore),
     );
   }
 
@@ -159,40 +158,236 @@ class _ExplorePropertiesScreenState extends State<ExplorePropertiesScreen> {
     );
   }
 
-  /// The horizontal row of filter chips.
-  /// "أراضٍ" is left out until the team adds land to the property types.
-  Widget _buildChips() {
-    return SizedBox(
-      height: 44,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _FilterChip(
-            label: 'الكل',
-            selected: _filter.isAll,
-            onTap: () => setState(() => _filter = const ExploreFilter()),
-          ),
-          _FilterChip(
-            label: 'محلات',
-            selected: _filter.type == PropertyType.shop,
-            onTap: () =>
-                setState(() => _filter = _filter.toggleType(PropertyType.shop)),
-          ),
-          _FilterChip(
-            label: 'مكاتب',
-            selected: _filter.type == PropertyType.office,
-            onTap: () => setState(
-              () => _filter = _filter.toggleType(PropertyType.office),
+  /// One simple "تصفية" button (+ "مسح" when filters are on).
+  Widget _buildFilterBar(List<Property> all) {
+    final n = _filter.activeCount;
+    return Row(
+      children: [
+        SizedBox(
+          height: 44,
+          child: OutlinedButton.icon(
+            onPressed: all.isEmpty ? null : () => _openFilterSheet(all),
+            icon: const Icon(Icons.tune, size: 20),
+            label: Text(n == 0 ? 'تصفية' : 'تصفية ($n)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: n == 0 ? AppColors.brown : Colors.white,
+              backgroundColor: n == 0 ? Colors.white : AppColors.brown,
+              side: BorderSide(
+                color: n == 0 ? AppColors.border : AppColors.brown,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-          _FilterChip(
-            label: 'أقل من 80 م²',
-            selected: _filter.onlySmall,
-            onTap: () => setState(() => _filter = _filter.toggleSmall()),
+        ),
+        if (n > 0) ...[
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: () => setState(() => _filter = const ExploreFilter()),
+            child: const Text(
+              'مسح',
+              style: TextStyle(
+                color: AppColors.brown,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
+      ],
+    );
+  }
+
+  /// The filter sheet: type chips + budget range + space range.
+  Future<void> _openFilterSheet(List<Property> all) async {
+    final types = {for (final p in all) p.propertyType}.toList();
+
+    // fixed slider ends; the very ends mean "no limit" (change them here only)
+    const rentMin = 0.0;
+    const rentMax = 500000.0; // SAR / year
+    const areaMin = 0.0;
+    const areaMax = 2000.0; // m²
+
+    // start from the current filter (or the full range)
+    String? type = _filter.type;
+    var budget = RangeValues(
+      (_filter.minBudget ?? rentMin).clamp(rentMin, rentMax).toDouble(),
+      (_filter.maxBudget ?? rentMax).clamp(rentMin, rentMax).toDouble(),
+    );
+    var space = RangeValues(
+      (_filter.minSpace ?? areaMin).clamp(areaMin, areaMax).toDouble(),
+      (_filter.maxSpace ?? areaMax).clamp(areaMin, areaMax).toDouble(),
+    );
+
+    Widget sectionTitle(String text) => Padding(
+      padding: const EdgeInsets.only(top: 18, bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
+          color: AppColors.brownDark,
+        ),
       ),
     );
+
+    // the text under each slider; the slider ends mean "no limit"
+    String rangeLabel(RangeValues v, double min, double max, String unit) {
+      final from = formatNumber(v.start.roundToDouble());
+      final to = formatNumber(v.end.roundToDouble());
+      final noMin = v.start <= min;
+      final noMax = v.end >= max;
+      if (noMin && noMax) return 'بلا حد أدنى — بلا حد أعلى';
+      if (noMin) return 'بلا حد أدنى — إلى $to $unit';
+      if (noMax) return 'من $from $unit — بلا حد أعلى';
+      return 'من $from إلى $to $unit';
+    }
+
+    final result = await showModalBottomSheet<ExploreFilter>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      // StatefulBuilder lets the sliders and chips update inside the sheet
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'تصفية العقارات',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.brownDark,
+                ),
+              ),
+
+              // --- property type ---
+              sectionTitle('نوع العقار'),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final t in types)
+                    ChoiceChip(
+                      label: Text(PropertyType.labelOf(t)),
+                      selected: type == t,
+                      showCheckmark: false,
+                      onSelected: (_) =>
+                          setSheet(() => type = type == t ? null : t),
+                      selectedColor: AppColors.brown,
+                      backgroundColor: AppColors.background,
+                      side: const BorderSide(color: AppColors.border),
+                      labelStyle: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: type == t ? Colors.white : AppColors.brownDark,
+                      ),
+                    ),
+                ],
+              ),
+
+              // --- budget range ---
+              sectionTitle('الميزانية السنوية'),
+              Text(
+                rangeLabel(budget, rentMin, rentMax, 'ر.س'),
+                style: const TextStyle(fontSize: 13.5, color: AppColors.hint),
+              ),
+              RangeSlider(
+                values: budget,
+                min: rentMin,
+                max: rentMax,
+                divisions: 50,
+                activeColor: AppColors.brown,
+                inactiveColor: AppColors.gradientStart,
+                onChanged: (v) => setSheet(() => budget = v),
+              ),
+
+              // --- space range ---
+              sectionTitle('المساحة'),
+              Text(
+                rangeLabel(space, areaMin, areaMax, 'م²'),
+                style: const TextStyle(fontSize: 13.5, color: AppColors.hint),
+              ),
+              RangeSlider(
+                values: space,
+                min: areaMin,
+                max: areaMax,
+                divisions: 40,
+                activeColor: AppColors.brown,
+                inactiveColor: AppColors.gradientStart,
+                onChanged: (v) => setSheet(() => space = v),
+              ),
+
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: PrimaryButton(
+                      text: 'تطبيق',
+                      onPressed: () => Navigator.of(ctx).pop(
+                        ExploreFilter(
+                          type: type,
+                          // a handle left at the end = no limit on that side
+                          minBudget: budget.start > rentMin
+                              ? budget.start
+                              : null,
+                          maxBudget: budget.end < rentMax ? budget.end : null,
+                          minSpace: space.start > areaMin ? space.start : null,
+                          maxSpace: space.end < areaMax ? space.end : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 54,
+                      child: OutlinedButton(
+                        onPressed: () =>
+                            Navigator.of(ctx).pop(const ExploreFilter()),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.brown,
+                          side: const BorderSide(color: AppColors.border),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'مسح',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    // closed by swiping down -> null -> keep the old filter
+    if (result != null && mounted) setState(() => _filter = result);
   }
 
   /// What appears under the chips, depending on the loading state.
@@ -224,10 +419,22 @@ class _ExplorePropertiesScreenState extends State<ExplorePropertiesScreen> {
     // 3) loaded: apply the chips
     final properties = _filter.apply(snapshot.data ?? const []);
     if (properties.isEmpty) {
-      return const [
+      // no filter chosen -> there are simply no properties yet
+      if (_filter.isAll) {
+        return const [
+          _MessageBox(
+            icon: Icons.storefront_outlined,
+            text: 'لا توجد عقارات متاحة حالياً.\nتُضاف عقارات جديدة باستمرار.',
+          ),
+        ];
+      }
+      // the filter is hiding everything -> offer to clear it
+      return [
         _MessageBox(
           icon: Icons.search_off_rounded,
           text: 'لا توجد عقارات تطابق اختيارك حالياً.',
+          actionLabel: 'مسح الفلاتر',
+          onAction: () => setState(() => _filter = const ExploreFilter()),
         ),
       ];
     }
@@ -250,51 +457,6 @@ class _ExplorePropertiesScreenState extends State<ExplorePropertiesScreen> {
           ),
         ),
     ];
-  }
-}
-
-/// One rounded chip. Filled brown when selected, outlined when not.
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(end: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? AppColors.brown : AppColors.background,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: selected ? AppColors.brown : AppColors.border,
-              width: 1.2,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: selected ? Colors.white : AppColors.brownDark,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 

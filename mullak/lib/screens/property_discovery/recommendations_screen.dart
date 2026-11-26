@@ -9,7 +9,6 @@ import 'property_details_screen.dart';
 import 'utils/discovery_formatters.dart';
 import '../../widgets/app_bottom_nav.dart';
 
-
 /// "أنسب العقارات لنشاطك" — ranked recommendations with reasons.
 ///
 /// Backlog story: "As a business owner, I want to receive property
@@ -29,15 +28,17 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   @override
   void initState() {
     super.initState();
-    _future =
-        RecommendationService.instance.getRecommendations(widget.requirement);
+    _future = RecommendationService.instance.getRecommendations(
+      widget.requirement,
+    );
   }
 
   /// Retry button: ask the service again.
   void _load() {
     setState(() {
-      _future = RecommendationService.instance
-          .getRecommendations(widget.requirement);
+      _future = RecommendationService.instance.getRecommendations(
+        widget.requirement,
+      );
     });
   }
 
@@ -59,7 +60,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
           },
         ),
       ),
-    bottomNavigationBar: const AppBottomNav(current: AppTab.explore),
+        bottomNavigationBar: const AppBottomNav(current: AppTab.explore),
     );
   }
 
@@ -166,7 +167,10 @@ class _RecommendationCard extends StatelessWidget {
   final Recommendation recommendation;
   final VoidCallback onTap;
 
-  const _RecommendationCard({required this.recommendation, required this.onTap});
+  const _RecommendationCard({
+    required this.recommendation,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +192,10 @@ class _RecommendationCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  _ScoreRing(score: recommendation.overallScore),
+                  GestureDetector(
+                    onTap: () => _showScoreDetails(context, recommendation),
+                    child: _ScoreRing(score: recommendation.overallScore),
+                  ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -240,6 +247,28 @@ class _RecommendationCard extends StatelessWidget {
                   ],
                 ),
               ],
+              const SizedBox(height: 14),
+              // big, clear button for the score breakdown (44px tap height)
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showScoreDetails(context, recommendation),
+                  icon: const Icon(Icons.insights_outlined, size: 18),
+                  label: const Text('كيف حُسبت النسبة؟'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.brown,
+                    side: const BorderSide(color: AppColors.border),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -393,6 +422,130 @@ class _Message extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+/// Bottom sheet: how the % was calculated.
+void _showScoreDetails(BuildContext context, Recommendation r) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (_) => Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'الملاءمة الكلية: ${r.overallScore}%',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.brownDark,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'متوسط درجة الموقع ودرجة ملاءمة العقار',
+            style: TextStyle(fontSize: 13, color: AppColors.hint),
+          ),
+          const SizedBox(height: 20),
+          _ScoreRow(label: 'الموقع', value: r.locationScore, max: 100, main: true),
+          _ScoreRow(
+            label: 'ملاءمة العقار',
+            value: r.propertyMatchScore,
+            max: 100,
+            main: true,
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 16),
+            child: Column(
+              children: [
+                _ScoreRow(label: 'الميزانية', value: r.budgetPoints, max: 50),
+                _ScoreRow(label: 'المساحة', value: r.spacePoints, max: 30),
+                _ScoreRow(
+                  label: 'نوع العقار والنشاط',
+                  value: r.typePoints,
+                  max: 20,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// One line in the sheet: label, "x/max", and a bar.
+class _ScoreRow extends StatelessWidget {
+  final String label;
+  final double value;
+  final double max;
+  final bool main; // main scores are bigger, sub-scores smaller
+
+  const _ScoreRow({
+    required this.label,
+    required this.value,
+    required this.max,
+    this.main = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: main ? 15 : 13.5,
+                    fontWeight: main ? FontWeight.w800 : FontWeight.w600,
+                    color: AppColors.brownDark,
+                  ),
+                ),
+              ),
+              Text(
+                '${value.round()}/${max.toInt()}',
+                style: TextStyle(
+                  fontSize: main ? 15 : 13.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.brown,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (value / max).clamp(0, 1).toDouble(),
+              minHeight: main ? 8 : 6,
+              color: AppColors.brown,
+              backgroundColor: AppColors.gradientStart,
+            ),
+          ),
         ],
       ),
     );

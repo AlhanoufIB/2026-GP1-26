@@ -1,9 +1,7 @@
 /// Data model for one commercial property listing.
 ///
 /// The fields follow the PROPERTY entity in our data dictionary
-/// (report section 4.4.2). [address] and [description] were added to the
-/// PROPERTY table (both optional). [hasParking] is still NOT in the
-/// dictionary ("PENDING TEAM DECISION").
+/// (report section 4.4.2).
 class Property {
   // ---------- fields from the data dictionary ----------
   final String propertyId; // PK
@@ -12,6 +10,7 @@ class Property {
   final String district; // e.g. "الملقا"
   final String city; // e.g. "الرياض"
   final String propertyType; // one of PropertyType values below
+  final String? activityType; // e.g. "مقهى" (optional, chosen by the owner)
   final double areaSqm; // must be > 0
   final double rentPrice; // SAR per year, must be >= 0
   final String status; // one of PropertyStatus values below
@@ -35,6 +34,7 @@ class Property {
     required this.district,
     required this.city,
     required this.propertyType,
+    this.activityType,
     required this.areaSqm,
     required this.rentPrice,
     required this.status,
@@ -57,28 +57,45 @@ class Property {
   String get typeLabel => PropertyType.labelOf(propertyType);
 }
 
-/// The fixed list of property types from the data dictionary.
-/// We store the English value in the database and show the Arabic label.
+/// The fixed list of property types.
+/// Stored in Arabic, exactly as the add-property form saves them
+/// (same values as kPropertyTypes in property_form_screen.dart).
 class PropertyType {
-  static const shop = 'shop';
-  static const office = 'office';
-  static const kiosk = 'kiosk';
-  static const warehouse = 'warehouse';
+  static const shop = 'محل';
+  static const office = 'مكتب';
+  static const showroom = 'معرض';
+  static const commercialBuilding = 'مبنى تجاري';
+  static const mixedBuilding = 'مبنى تجاري سكني';
+  static const floor = 'دور';
+  static const commercialLand = 'أرض تجارية';
 
-  static const all = [shop, office, kiosk, warehouse];
+  // older values, kept so old code and test data still compile
+  static const kiosk = 'كشك';
+  static const warehouse = 'مستودع';
 
+  static const all = [
+    shop,
+    office,
+    showroom,
+    commercialBuilding,
+    mixedBuilding,
+    floor,
+    commercialLand,
+  ];
+
+  /// The value is already Arabic, so it's shown as is.
   static String labelOf(String type) {
     switch (type) {
-      case shop:
+      case 'shop':
         return 'محل';
-      case office:
+      case 'office':
         return 'مكتب';
-      case kiosk:
+      case 'kiosk':
         return 'كشك';
-      case warehouse:
+      case 'warehouse':
         return 'مستودع';
       default:
-        return type; // unknown value: show it as is instead of crashing
+        return type;
     }
   }
 }

@@ -2,6 +2,7 @@ part of 'generated.dart';
 
 class CreateBusinessRequirementVariablesBuilder {
   String businessType;
+  String propertyType;
   double budget;
   double requiredSpace;
   Optional<String> _preferredLocation = Optional.optional(nativeFromJson, nativeToJson);
@@ -11,7 +12,7 @@ class CreateBusinessRequirementVariablesBuilder {
    return this;
   }
 
-  CreateBusinessRequirementVariablesBuilder(this._dataConnect, {required  this.businessType,required  this.budget,required  this.requiredSpace,});
+  CreateBusinessRequirementVariablesBuilder(this._dataConnect, {required  this.businessType,required  this.propertyType,required  this.budget,required  this.requiredSpace,});
   Deserializer<CreateBusinessRequirementData> dataDeserializer = (dynamic json)  => CreateBusinessRequirementData.fromJson(jsonDecode(json));
   Serializer<CreateBusinessRequirementVariables> varsSerializer = (CreateBusinessRequirementVariables vars) => jsonEncode(vars.toJson());
   Future<OperationResult<CreateBusinessRequirementData, CreateBusinessRequirementVariables>> execute() {
@@ -19,7 +20,7 @@ class CreateBusinessRequirementVariablesBuilder {
   }
 
   MutationRef<CreateBusinessRequirementData, CreateBusinessRequirementVariables> ref() {
-    CreateBusinessRequirementVariables vars= CreateBusinessRequirementVariables(businessType: businessType,budget: budget,requiredSpace: requiredSpace,preferredLocation: _preferredLocation,);
+    CreateBusinessRequirementVariables vars= CreateBusinessRequirementVariables(businessType: businessType,propertyType: propertyType,budget: budget,requiredSpace: requiredSpace,preferredLocation: _preferredLocation,);
     return _dataConnect.mutation("CreateBusinessRequirement", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -95,6 +96,7 @@ class CreateBusinessRequirementData {
 @immutable
 class CreateBusinessRequirementVariables {
   final String businessType;
+  final String propertyType;
   final double budget;
   final double requiredSpace;
   late final Optional<String>preferredLocation;
@@ -102,8 +104,10 @@ class CreateBusinessRequirementVariables {
   CreateBusinessRequirementVariables.fromJson(Map<String, dynamic> json):
   
   businessType = nativeFromJson<String>(json['businessType']),
+  propertyType = nativeFromJson<String>(json['propertyType']),
   budget = nativeFromJson<double>(json['budget']),
   requiredSpace = nativeFromJson<double>(json['requiredSpace']) {
+  
   
   
   
@@ -124,18 +128,20 @@ class CreateBusinessRequirementVariables {
 
     final CreateBusinessRequirementVariables otherTyped = other as CreateBusinessRequirementVariables;
     return businessType == otherTyped.businessType && 
+    propertyType == otherTyped.propertyType && 
     budget == otherTyped.budget && 
     requiredSpace == otherTyped.requiredSpace && 
     preferredLocation == otherTyped.preferredLocation;
     
   }
   @override
-  int get hashCode => Object.hashAll([businessType.hashCode, budget.hashCode, requiredSpace.hashCode, preferredLocation.hashCode]);
+  int get hashCode => Object.hashAll([businessType.hashCode, propertyType.hashCode, budget.hashCode, requiredSpace.hashCode, preferredLocation.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['businessType'] = nativeToJson<String>(businessType);
+    json['propertyType'] = nativeToJson<String>(propertyType);
     json['budget'] = nativeToJson<double>(budget);
     json['requiredSpace'] = nativeToJson<double>(requiredSpace);
     if(preferredLocation.state == OptionalState.set) {
@@ -146,6 +152,7 @@ class CreateBusinessRequirementVariables {
 
   CreateBusinessRequirementVariables({
     required this.businessType,
+    required this.propertyType,
     required this.budget,
     required this.requiredSpace,
     required this.preferredLocation,

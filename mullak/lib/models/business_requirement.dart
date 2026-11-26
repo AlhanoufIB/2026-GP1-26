@@ -4,6 +4,7 @@ class BusinessRequirement {
   final String requirementId; // PK
   final String businessOwnerId; // FK -> Business_Owner.user_ID
   final String businessType; // e.g. "مقهى"
+  final String propertyType; // e.g. "محل" 
   final double budget; // max yearly rent in SAR, > 0
   final double requiredSpace; // min area in m², > 0
   final String? preferredLocation; // optional district/area
@@ -15,6 +16,7 @@ class BusinessRequirement {
     required this.requirementId,
     required this.businessOwnerId,
     required this.businessType,
+    required this.propertyType,
     required this.budget,
     required this.requiredSpace,
     this.preferredLocation,

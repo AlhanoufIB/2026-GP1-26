@@ -84,6 +84,7 @@ class DataConnectPropertyRepository implements PropertyRepository {
       description: json['description'] as String?,
       imageUrls: images,
       hasParking: json['hasParking'] as bool?,
+      activityType: json['activityType'] as String?,
     );
   }
 }

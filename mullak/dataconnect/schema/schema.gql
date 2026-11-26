@@ -60,7 +60,8 @@ type Image @table(name: "images") @unique(fields: ["property", "displayOrder"]) 
 # ---------- 6. BUSINESS_REQUIREMENT ----------
 type BusinessRequirement @table(name: "business_requirements") {
   businessOwner: User!
-  businessType: String! @col(dataType: "varchar(100)")   # cafe, pharmacy, salon...
+  propertyType: String @col(dataType: "varchar(50)")    # محل، مكتب، معرض...
+  businessType: String! @col(dataType: "varchar(100)")   # مقهى, صيدلية, صالون...
   budget: Float!
   requiredSpace: Float!
   preferredLocation: String @col(dataType: "varchar(150)")

@@ -10,6 +10,7 @@ import 'utils/discovery_formatters.dart';
 import 'widgets/property_image.dart';
 import 'compare_properties_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
+import 'explore_properties_screen.dart';
 
 /// "العقارات المحفوظة" — saved list + pick 2 to 4 properties to compare.
 class SavedPropertiesScreen extends StatefulWidget {
@@ -62,6 +63,24 @@ class _SavedPropertiesScreenState extends State<SavedPropertiesScreen> {
           );
       }
     });
+  }
+
+  /// Unsave, with "تراجع" in case it was a mistake.
+  void _unsave(Property p) {
+    _saved.toggle(p.propertyId);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+          content: const Text('تمت إزالة العقار من المحفوظات'),
+          action: SnackBarAction(
+            label: 'تراجع',
+            onPressed: () => _saved.toggle(p.propertyId), // save it again
+          ),
+        ),
+      );
   }
 
   void _openCompare() {
@@ -166,17 +185,35 @@ class _SavedPropertiesScreenState extends State<SavedPropertiesScreen> {
 
     final properties = snapshot.data ?? const [];
     if (properties.isEmpty) {
-      return const [
+      return [
         Padding(
-          padding: EdgeInsets.only(top: 48),
+          padding: const EdgeInsets.only(top: 48),
           child: Column(
             children: [
-              Icon(Icons.bookmark_border, size: 48, color: AppColors.hint),
-              SizedBox(height: 12),
-              Text(
+              const Icon(
+                Icons.bookmark_border,
+                size: 48,
+                color: AppColors.hint,
+              ),
+              const SizedBox(height: 12),
+              const Text(
                 'لا توجد عقارات محفوظة بعد.\nاضغط "حفظ" في صفحة أي عقار لإضافته هنا.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.hint),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: 220,
+                child: PrimaryButton(
+                  text: 'استكشف العقارات',
+                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (_) => const ExplorePropertiesScreen(),
+                    ),
+                    (route) =>
+                        false, // same as tapping "استكشاف" in the nav bar
+                  ),
+                ),
               ),
             ],
           ),
@@ -192,7 +229,7 @@ class _SavedPropertiesScreenState extends State<SavedPropertiesScreen> {
             property: p,
             selected: _selected.contains(p.propertyId),
             onSelect: () => _toggleSelected(p.propertyId),
-            onUnsave: () => _saved.toggle(p.propertyId),
+            onUnsave: () => _unsave(p),
             onOpen: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => PropertyDetailsScreen(property: p),

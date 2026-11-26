@@ -1225,10 +1225,12 @@ ref.execute();
 #### Required Arguments
 ```dart
 String businessType = ...;
+String propertyType = ...;
 double budget = ...;
 double requiredSpace = ...;
 MullakConnector.instance.createBusinessRequirement(
   businessType: businessType,
+  propertyType: propertyType,
   budget: budget,
   requiredSpace: requiredSpace,
 ).execute();
@@ -1249,6 +1251,7 @@ class CreateBusinessRequirementVariablesBuilder {
 }
 MullakConnector.instance.createBusinessRequirement(
   businessType: businessType,
+  propertyType: propertyType,
   budget: budget,
   requiredSpace: requiredSpace,
 )
@@ -1269,6 +1272,7 @@ class OperationResult<Data, Variables> {
 
 final result = await MullakConnector.instance.createBusinessRequirement(
   businessType: businessType,
+  propertyType: propertyType,
   budget: budget,
   requiredSpace: requiredSpace,
 );
@@ -1281,11 +1285,13 @@ Each builder returns an `execute` function, which is a helper function that crea
 An example of how to use the `Ref` object is shown below:
 ```dart
 String businessType = ...;
+String propertyType = ...;
 double budget = ...;
 double requiredSpace = ...;
 
 final ref = MullakConnector.instance.createBusinessRequirement(
   businessType: businessType,
+  propertyType: propertyType,
   budget: budget,
   requiredSpace: requiredSpace,
 ).ref();

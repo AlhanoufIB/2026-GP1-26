@@ -13,6 +13,7 @@ abstract class BusinessRequirementRepository {
   Future<BusinessRequirement> save({
     required String businessOwnerId,
     required String businessType,
+    required String propertyType,
     required double budget,
     required double requiredSpace,
     String? preferredLocation,
@@ -37,15 +38,17 @@ class DataConnectBusinessRequirementRepository
   Future<BusinessRequirement> save({
     required String businessOwnerId,
     required String businessType,
+    required String propertyType,
     required double budget,
     required double requiredSpace,
     String? preferredLocation,
     String? otherRequirements,
   }) async {
-        // same answers as last time? reuse it instead of a new row
+    // same answers as last time? reuse it instead of a new row
     final last = _lastSaved;
     if (last != null &&
         last.businessType == businessType &&
+        last.propertyType == propertyType &&
         last.budget == budget &&
         last.requiredSpace == requiredSpace &&
         last.preferredLocation == preferredLocation) {
@@ -54,6 +57,7 @@ class DataConnectBusinessRequirementRepository
     final result = await _db
         .createBusinessRequirement(
           businessType: businessType,
+          propertyType: propertyType,
           budget: budget,
           requiredSpace: requiredSpace,
         )
@@ -67,6 +71,7 @@ class DataConnectBusinessRequirementRepository
       businessOwnerId:
           FirebaseAuth.instance.currentUser?.uid ?? businessOwnerId,
       businessType: businessType,
+      propertyType: propertyType,
       budget: budget,
       requiredSpace: requiredSpace,
       preferredLocation: preferredLocation,

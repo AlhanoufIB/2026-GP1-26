@@ -177,8 +177,8 @@ class MullakConnector {
   }
   
   
-  CreateBusinessRequirementVariablesBuilder createBusinessRequirement ({required String businessType, required double budget, required double requiredSpace, }) {
-    return CreateBusinessRequirementVariablesBuilder(dataConnect, businessType: businessType,budget: budget,requiredSpace: requiredSpace,);
+  CreateBusinessRequirementVariablesBuilder createBusinessRequirement ({required String businessType, required String propertyType, required double budget, required double requiredSpace, }) {
+    return CreateBusinessRequirementVariablesBuilder(dataConnect, businessType: businessType,propertyType: propertyType,budget: budget,requiredSpace: requiredSpace,);
   }
   
   

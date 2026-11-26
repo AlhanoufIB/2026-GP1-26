@@ -23,6 +23,7 @@ class ListDiscoveryPropertiesProperties {
   final String district;
   final String city;
   final String propertyType;
+  final String? activityType;
   final double areaSqm;
   final double rentPrice;
   final String status;
@@ -41,6 +42,7 @@ class ListDiscoveryPropertiesProperties {
   district = nativeFromJson<String>(json['district']),
   city = nativeFromJson<String>(json['city']),
   propertyType = nativeFromJson<String>(json['propertyType']),
+  activityType = json['activityType'] == null ? null : nativeFromJson<String>(json['activityType']),
   areaSqm = nativeFromJson<double>(json['areaSqm']),
   rentPrice = nativeFromJson<double>(json['rentPrice']),
   status = nativeFromJson<String>(json['status']),
@@ -69,6 +71,7 @@ class ListDiscoveryPropertiesProperties {
     district == otherTyped.district && 
     city == otherTyped.city && 
     propertyType == otherTyped.propertyType && 
+    activityType == otherTyped.activityType && 
     areaSqm == otherTyped.areaSqm && 
     rentPrice == otherTyped.rentPrice && 
     status == otherTyped.status && 
@@ -83,7 +86,7 @@ class ListDiscoveryPropertiesProperties {
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, district.hashCode, city.hashCode, propertyType.hashCode, areaSqm.hashCode, rentPrice.hashCode, status.hashCode, latitude.hashCode, longitude.hashCode, estimatedPrice.hashCode, address.hashCode, description.hashCode, hasParking.hashCode, owner.hashCode, images.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, title.hashCode, district.hashCode, city.hashCode, propertyType.hashCode, activityType.hashCode, areaSqm.hashCode, rentPrice.hashCode, status.hashCode, latitude.hashCode, longitude.hashCode, estimatedPrice.hashCode, address.hashCode, description.hashCode, hasParking.hashCode, owner.hashCode, images.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -93,6 +96,9 @@ class ListDiscoveryPropertiesProperties {
     json['district'] = nativeToJson<String>(district);
     json['city'] = nativeToJson<String>(city);
     json['propertyType'] = nativeToJson<String>(propertyType);
+    if (activityType != null) {
+      json['activityType'] = nativeToJson<String?>(activityType);
+    }
     json['areaSqm'] = nativeToJson<double>(areaSqm);
     json['rentPrice'] = nativeToJson<double>(rentPrice);
     json['status'] = nativeToJson<String>(status);
@@ -121,6 +127,7 @@ class ListDiscoveryPropertiesProperties {
     required this.district,
     required this.city,
     required this.propertyType,
+    this.activityType,
     required this.areaSqm,
     required this.rentPrice,
     required this.status,

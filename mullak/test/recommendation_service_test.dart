@@ -1,15 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mullak/models/business_requirement.dart';
 import 'package:mullak/services/recommendation_service.dart';
+import 'package:mullak/repositories/property_repository.dart';
 
 // Run with:  flutter test test/recommendation_service_test.dart
 void main() {
+    // use the 6 sample properties, not Firebase (tests run offline)
+  setUp(() => PropertyRepository.instance = LocalPropertyRepository());
   final service = RuleBasedRecommendationService();
 
   const cafeInMalqa = BusinessRequirement(
     requirementId: 'req_test',
     businessOwnerId: 'business_owner_1',
     businessType: 'مقهى',
+    propertyType: 'محل',
     budget: 80000,
     requiredSpace: 60,
     preferredLocation: 'الملقا',
@@ -21,27 +25,32 @@ void main() {
     for (var i = 0; i < results.length; i++) {
       expect(results[i].rank, i + 1);
       if (i > 0) {
-        expect(results[i - 1].overallScore,
-            greaterThanOrEqualTo(results[i].overallScore));
+        expect(
+          results[i - 1].overallScore,
+          greaterThanOrEqualTo(results[i].overallScore),
+        );
       }
     }
   });
 
-  test('the Malqa shop is first: in budget, big enough, preferred district',
-      () async {
-    final results = await service.getRecommendations(cafeInMalqa);
-    final best = results.first;
-    expect(best.property.district, 'الملقا');
-    expect(best.overallScore, 100);
-    expect(best.tags, contains('ضمن الميزانية'));
-    expect(best.explanation, contains('في موقعك المفضّل'));
-  });
+  test(
+    'the Malqa shop is first: in budget, big enough, preferred district',
+    () async {
+      final results = await service.getRecommendations(cafeInMalqa);
+      final best = results.first;
+      expect(best.property.district, 'الملقا');
+      expect(best.overallScore, 100);
+      expect(best.tags, contains('ضمن الميزانية'));
+      expect(best.explanation, contains('في موقعك المفضّل'));
+    },
+  );
 
   test('scores always stay between 0 and 100', () async {
     const tinyBudget = BusinessRequirement(
       requirementId: 'req_low',
       businessOwnerId: 'business_owner_1',
       businessType: 'مقهى',
+      propertyType: 'محل',
       budget: 1000,
       requiredSpace: 500,
     );

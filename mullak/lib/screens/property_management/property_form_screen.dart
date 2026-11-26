@@ -12,6 +12,7 @@ import '../../widgets/form_fields.dart';
 import '../../widgets/image_picker_section.dart';
 import 'location_picker_screen.dart';
 import 'suggested_price_screen.dart';
+import '../map/heatmap_data.dart' show loadDatasetPoints;
 
 /// قوائم مشتقة من QI_Neighborhood_Data.xlsx:
 ///  أنواع العقار ← Rental Commercial + Parcel Types
@@ -71,6 +72,8 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   bool _hasParking = false;
   double? _estimated;
   bool _saving = false;
+  final _locationFocus = FocusNode();
+  List<String> _districts = []; // Riyadh districts from the heat map data
   bool _submitted = false;
 
   bool get _isEdit => widget.property != null;

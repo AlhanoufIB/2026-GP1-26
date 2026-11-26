@@ -24,7 +24,7 @@ abstract class RecommendationService {
 /// property_match_score (0-100):
 ///   budget  up to 50 (full if rent <= budget, less the more it's over)
 ///   space   up to 30 (full if area >= required, less if smaller)
-///   type    20       (office businesses -> offices, others -> shops/kiosks)
+///   type    20       (same property type 10 + same activity 10)
 /// location_score (0-100):
 ///   100 in the preferred district, 40 elsewhere, 60 if none was chosen.
 class RuleBasedRecommendationService implements RecommendationService {
@@ -50,6 +50,9 @@ class RuleBasedRecommendationService implements RecommendationService {
           propertyMatchScore: top[i].propertyMatchScore,
           explanation: top[i].explanation,
           tags: top[i].tags,
+          budgetPoints: top[i].budgetPoints,
+          spacePoints: top[i].spacePoints,
+          typePoints: top[i].typePoints,
           rank: i + 1,
         ),
     ];
@@ -81,10 +84,20 @@ class RuleBasedRecommendationService implements RecommendationService {
       reasons.add('مساحة أصغر من المطلوب');
     }
 
-    // --- property type: 20 points ---
-    final typePoints =
-        _typeFits(req.businessType, p.propertyType) ? 20.0 : 0.0;
-    if (typePoints == 0) reasons.add('نوع العقار أقل ملاءمة لنشاطك');
+    // --- property type + activity: up to 20 points ---
+    // exact match: both forms pick from the same lists
+    double typePoints = 0;
+    if (p.propertyType == req.propertyType) {
+      typePoints += 10;
+      tags.add('نوع العقار المطلوب');
+    } else {
+      reasons.add('نوع العقار مختلف عن المطلوب');
+    }
+    if (p.activityType == req.businessType) {
+      typePoints += 10;
+      reasons.add('مناسب لنشاطك');
+      tags.add('مناسب لنشاطك');
+    }
 
     // --- location: separate 0-100 score ---
     double locationScore;
@@ -110,21 +123,13 @@ class RuleBasedRecommendationService implements RecommendationService {
       propertyMatchScore: budgetPoints + spacePoints + typePoints,
       explanation: 'السبب: ${reasons.join('، ')}.',
       tags: tags,
+      budgetPoints: budgetPoints,
+      spacePoints: spacePoints,
+      typePoints: typePoints,
       rank: 0, // set after sorting
     );
   }
-
-  /// Very simple matching between the free-text business type and the
-  /// property type. The AI model will replace this.
-  bool _typeFits(String businessType, String propertyType) {
-    const officeWords = ['مكتب', 'شركة', 'استشار', 'محاسب', 'تقنية'];
-    final wantsOffice = officeWords.any(businessType.contains);
-    if (wantsOffice) return propertyType == PropertyType.office;
-    return propertyType == PropertyType.shop ||
-        propertyType == PropertyType.kiosk;
-  }
 }
-
 
 /// Takes the results of another service (today: the rule-based one,
 /// later: the AI model) and stores them in the RECOMMENDATION table,

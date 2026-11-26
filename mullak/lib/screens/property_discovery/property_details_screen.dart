@@ -241,8 +241,8 @@ class PropertyDetailsScreen extends StatelessWidget {
                     return SizedBox(
                       height: 54,
                       child: OutlinedButton.icon(
-                        onPressed: () => SavedPropertiesRepository.instance
-                            .toggle(property.propertyId),
+                        onPressed: () =>
+                            _toggleSave(context, property.propertyId),
                         icon: Icon(
                           saved ? Icons.bookmark : Icons.bookmark_border,
                           color: AppColors.brownDark,
@@ -324,4 +324,36 @@ class _InfoBox extends StatelessWidget {
       ),
     );
   }
+}
+/// Saves or unsaves, then shows a short message with "تراجع" (undo).
+Future<void> _toggleSave(BuildContext context, String propertyId) async {
+  final repo = SavedPropertiesRepository.instance;
+  final messenger = ScaffoldMessenger.of(context); // grab it before await
+  final wasSaved = repo.isSaved(propertyId);
+
+  await repo.toggle(propertyId);
+
+  // toggle() undoes itself if the database call failed
+  final failed = repo.isSaved(propertyId) == wasSaved;
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        content: Text(
+          failed
+              ? 'تعذّر الحفظ، حاول مرة أخرى'
+              : (wasSaved
+                  ? 'تمت إزالة العقار من المحفوظات'
+                  : 'تم حفظ العقار'),
+        ),
+        action: failed
+            ? null
+            : SnackBarAction(
+                label: 'تراجع',
+                onPressed: () => repo.toggle(propertyId),
+              ),
+      ),
+    );
 }

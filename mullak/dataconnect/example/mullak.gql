@@ -242,7 +242,7 @@ query ListMessages($chatId: UUID!) @auth(level: USER) {
   }
 }
 
-# ---------------- SAVED PROPERTIES (Student 4) ----------------
+# ---------------- SAVED PROPERTIES ----------------
 # "saves" (Business Owner 0..* -- 0..* Property) is stored as a list of
 # property ids on the user's own row: users.savedPropertyIds.
 
@@ -276,6 +276,7 @@ query ListDiscoveryProperties @auth(level: USER) {
     district
     city
     propertyType
+    activityType
     areaSqm
     rentPrice
     status
@@ -297,6 +298,7 @@ query ListPropertiesByIds($ids: [UUID!]!) @auth(level: USER) {
     district
     city
     propertyType
+    activityType
     areaSqm
     rentPrice
     status
@@ -316,6 +318,7 @@ query ListPropertiesByIds($ids: [UUID!]!) @auth(level: USER) {
 
 mutation CreateBusinessRequirement(
   $businessType: String!
+  $propertyType: String!
   $budget: Float!
   $requiredSpace: Float!
   $preferredLocation: String
@@ -323,6 +326,7 @@ mutation CreateBusinessRequirement(
   businessRequirement_insert(data: {
     businessOwnerId_expr: "auth.uid"
     businessType: $businessType
+    propertyType: $propertyType
     budget: $budget
     requiredSpace: $requiredSpace
     preferredLocation: $preferredLocation
