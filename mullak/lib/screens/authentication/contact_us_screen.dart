@@ -1,24 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../widgets/status_banner.dart';
+
 import '../../theme/app_colors.dart';
 import '../../widgets/app_bottom_nav.dart';
-import 'widgets/back_link.dart';
+import '../../widgets/back_link.dart'; // shared: "رجوع" with the arrow on the right
 
 /// "تواصل معنا": the team's contact details.
 /// Tapping a row copies it so the user can paste it in the phone or mail app.
-class ContactUsScreen extends StatelessWidget {
+class ContactUsScreen extends StatefulWidget {
   const ContactUsScreen({super.key});
+
+  @override
+  State<ContactUsScreen> createState() => _ContactUsScreenState();
+}
+
+class _ContactUsScreenState extends State<ContactUsScreen>
+    with StatusBannerMixin<ContactUsScreen> {
 
   // TODO: put the team's real contact details here.
   static const phone = '+966 5X XXX XXXX';
   static const email = 'mullak@example.com';
 
+  /// Copies, then shows a green confirmation (same style as "عقاراتي").
   void _copy(BuildContext context, String value, String msg) {
     Clipboard.setData(ClipboardData(text: value));
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(msg)));
+    showBanner(msg);
   }
 
   @override
@@ -31,7 +39,7 @@ class ContactUsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const BackLink(),
+              const BackLink(text: 'رجوع'),
               const SizedBox(height: 8),
               const Text(
                 'تواصل معنا',
@@ -47,6 +55,7 @@ class ContactUsScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 12.5, color: AppColors.hint),
               ),
               const SizedBox(height: 22),
+              banner(),
               _ContactRow(
                 icon: Icons.phone_outlined,
                 label: 'رقم الجوال',

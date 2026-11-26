@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/validators.dart';
+import '../../widgets/back_link.dart';
 import 'widgets/otp_input.dart';
 import 'widgets/primary_button.dart';
 import '../map/map_screen.dart';
@@ -146,33 +146,8 @@ class _OtpScreenState extends State<OtpScreen> {
                     children: [
                       const SizedBox(height: 14),
 
-                      // "رجوع" link at the top
-                      Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: InkWell(
-                          onTap: () => Navigator.of(context).pop(),
-                          borderRadius: BorderRadius.circular(8),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'رجوع',
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.brownDark,
-                                  ),
-                                ),
-                                SizedBox(width: 6),
-                                Icon(Icons.arrow_forward,
-                                    size: 16, color: AppColors.brownDark),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                      // "رجوع" link at the top (shared widget, arrow on the right)
+                      const BackLink(text: 'رجوع'),
                       const SizedBox(height: 28),
 
                       const Text(
@@ -236,10 +211,9 @@ class _OtpScreenState extends State<OtpScreen> {
                         ],
                       ),
 
-                      // Development hint only. It is NOT shown in release
-                      // builds or once the mock service is replaced.
-                      if (kDebugMode &&
-                          AuthService.instance is MockAuthService) ...[
+                      // OTP is an interface only in this release, so tell
+                      // the user which code to enter.
+                      ...[
                         const SizedBox(height: 20),
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -249,7 +223,7 @@ class _OtpScreenState extends State<OtpScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Text(
-                            'وضع التجربة: الرمز الصحيح هو 123456',
+                            'ملاحظة: التحقق برسالة نصية غير مفعّل حالياً، استخدم الرمز الافتراضي 123456',
                             style: TextStyle(
                               fontSize: 12.5,
                               color: AppColors.brownDark,

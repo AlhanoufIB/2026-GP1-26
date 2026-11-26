@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../widgets/status_banner.dart';
 
 
 import '../../theme/app_colors.dart';
 import '../../utils/validators.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/back_link.dart'; // shared: "رجوع" with the arrow on the right
 import 'feedback_service.dart';
-import 'widgets/back_link.dart';
 import 'widgets/primary_button.dart';
 import 'widgets/text_area_field.dart';
 import 'widgets/field_label.dart';
@@ -18,7 +19,8 @@ class RateExperienceScreen extends StatefulWidget {
   State<RateExperienceScreen> createState() => _RateExperienceScreenState();
 }
 
-class _RateExperienceScreenState extends State<RateExperienceScreen> {
+class _RateExperienceScreenState extends State<RateExperienceScreen>
+    with StatusBannerMixin<RateExperienceScreen> {
   int _rating = 0; // 0 = nothing chosen yet, otherwise 1 to 5
   final _commentCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -31,12 +33,9 @@ class _RateExperienceScreenState extends State<RateExperienceScreen> {
     super.dispose();
   }
 
-  void _snack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(msg)));
-  }
+  /// Errors on this page: red banner above the button
+  /// (same style as the messages on "عقاراتي").
+  void _snack(String msg) => showBanner(msg, error: true);
 
   Future<void> _send() async {
     FocusScope.of(context).unfocus();
@@ -46,7 +45,6 @@ class _RateExperienceScreenState extends State<RateExperienceScreen> {
     if (_rating == 0 || !commentOk) return;
 
     setState(() => _sending = true);
-    final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     try {
       await FeedbackService.instance.submitRating(
@@ -54,12 +52,8 @@ class _RateExperienceScreenState extends State<RateExperienceScreen> {
         comment: _commentCtrl.text.trim(),
       );
       if (!mounted) return;
-      navigator.pop();
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('شكراً لك، تم إرسال تقييمك')),
-        );
+      // back to "حسابي", which shows the green confirmation
+      navigator.pop('شكراً لك، تم إرسال تقييمك');
     } catch (_) {
       _snack('تعذّر الإرسال، حاول مرة أخرى');
     } finally {
@@ -83,7 +77,7 @@ class _RateExperienceScreenState extends State<RateExperienceScreen> {
                   child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const BackLink(),
+                    const BackLink(text: 'رجوع'),
                     const SizedBox(height: 8),
                     const Text(
                       'كتابة تقييم',
@@ -148,6 +142,7 @@ class _RateExperienceScreenState extends State<RateExperienceScreen> {
                     ),
                     const Spacer(),
                     const SizedBox(height: 20),
+                    banner(),
                     PrimaryButton(
                       text: 'إرسال التقييم',
                       loading: _sending,

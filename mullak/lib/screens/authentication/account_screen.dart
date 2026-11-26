@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/status_banner.dart';
 
 import '../../dataconnect_generated/generated.dart';
 import '../../services/auth_service.dart';
@@ -11,11 +12,28 @@ import 'welcome_screen.dart';
 import '../../widgets/app_bottom_nav.dart';
 
 /// "حسابي": the first page after login, for now.
-class AccountScreen extends StatelessWidget {
+class AccountScreen extends StatefulWidget {
   /// The user's phone (+9665XXXXXXXX), shown under the name.
   final String? phone;
 
   const AccountScreen({super.key, this.phone});
+
+  @override
+  State<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends State<AccountScreen>
+    with StatusBannerMixin<AccountScreen> {
+  String? get phone => widget.phone;
+
+  /// Opens a page; if it comes back with a message (e.g. "تم إرسال البلاغ")
+  /// show it as a green confirmation here.
+  Future<void> _openForResult(Widget page) async {
+    final msg = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => page),
+    );
+    if (msg != null) showBanner(msg);
+  }
 
   void _logout(BuildContext context) {
     AuthService.instance.signOut();
@@ -53,6 +71,7 @@ class AccountScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    banner(),
 
                     // Profile card
                     _Card(
@@ -115,21 +134,13 @@ class AccountScreen extends StatelessWidget {
                     _MenuRow(
                       label: 'الإبلاغ عن مشكلة',
                       trailing: Icons.chevron_left,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const ReportProblemScreen(),
-                        ),
-                      ),
+                      onTap: () => _openForResult(const ReportProblemScreen()),
                     ),
                     const SizedBox(height: 16),
                     _MenuRow(
                       label: 'قيم تجربتك',
                       trailing: Icons.chevron_left,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const RateExperienceScreen(),
-                        ),
-                      ),
+                      onTap: () => _openForResult(const RateExperienceScreen()),
                     ),
                     const SizedBox(height: 16),
                     _MenuRow(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/status_banner.dart';
 
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
@@ -19,7 +20,8 @@ class SignUpScreen extends StatefulWidget {
   State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _SignUpScreenState extends State<SignUpScreen>
+    with StatusBannerMixin<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
@@ -36,12 +38,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _snack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(msg)));
-  }
+  /// Errors on this page: red banner above the button
+  /// (same style as the messages on "عقاراتي").
+  void _snack(String msg) => showBanner(msg, error: true);
 
   Future<void> _signUp() async {
     FocusScope.of(context).unfocus();
@@ -177,6 +176,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                         const Spacer(),
                         const SizedBox(height: 24),
+                        banner(),
 
                         PrimaryButton(
                           text: 'إنشاء الحساب',

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../widgets/status_banner.dart';
 
 
 import '../../theme/app_colors.dart';
 import '../../utils/validators.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/back_link.dart'; // shared: "رجوع" with the arrow on the right
 import 'feedback_service.dart';
-import 'widgets/back_link.dart';
 import 'widgets/primary_button.dart';
 import 'widgets/text_area_field.dart';
 import 'widgets/field_label.dart';
@@ -18,7 +19,8 @@ class ReportProblemScreen extends StatefulWidget {
   State<ReportProblemScreen> createState() => _ReportProblemScreenState();
 }
 
-class _ReportProblemScreenState extends State<ReportProblemScreen> {
+class _ReportProblemScreenState extends State<ReportProblemScreen>
+    with StatusBannerMixin<ReportProblemScreen> {
   static const _types = [
     'العقار قديم أو لم يعد متاحًا',
     'سعر أو بيانات غير صحيحة',
@@ -47,12 +49,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
     super.dispose();
   }
 
-  void _snack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(msg)));
-  }
+  /// Errors on this page: red banner above the button
+  /// (same style as the messages on "عقاراتي").
+  void _snack(String msg) => showBanner(msg, error: true);
 
   Future<void> _send() async {
     FocusScope.of(context).unfocus();
@@ -63,7 +62,6 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
     final details = _detailsCtrl.text.trim();
 
     setState(() => _sending = true);
-    final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     try {
       await FeedbackService.instance.submitReport(
@@ -71,10 +69,8 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
         details: details,
       );
       if (!mounted) return;
-      navigator.pop();
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('تم إرسال البلاغ، شكراً لك')));
+      // back to "حسابي", which shows the green confirmation
+      navigator.pop('تم إرسال البلاغ، شكراً لك');
     } catch (_) {
       _snack('تعذّر الإرسال، حاول مرة أخرى');
     } finally {
@@ -98,7 +94,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                   child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const BackLink(),
+                    const BackLink(text: 'رجوع'),
                     const SizedBox(height: 8),
                     const Text(
                       'الإبلاغ عن مشكلة',
@@ -150,6 +146,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                     ),
                     const Spacer(),
                     const SizedBox(height: 20),
+                    banner(),
                     PrimaryButton(
                       text: 'إرسال البلاغ',
                       loading: _sending,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/status_banner.dart';
 
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
@@ -29,7 +30,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with StatusBannerMixin<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _phoneCtrl;
   final _passCtrl = TextEditingController();
@@ -45,7 +47,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
     if (widget.showRegisteredNotice) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _snack('تم إنشاء حسابك بنجاح، سجّل الدخول للمتابعة');
+        // green confirmation (same style as "عقاراتي")
+        showBanner('تم إنشاء حسابك بنجاح، سجّل الدخول للمتابعة');
       });
     }
   }
@@ -57,12 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _snack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(msg)));
-  }
+  /// Errors on this page: red banner above the button
+  /// (same style as the messages on "عقاراتي").
+  void _snack(String msg) => showBanner(msg, error: true);
 
   Future<void> _login() async {
     FocusScope.of(context).unfocus();
@@ -163,6 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const Spacer(),
                         const SizedBox(height: 24),
+                        banner(),
 
                         PrimaryButton(
                           text: 'تسجيل الدخول',

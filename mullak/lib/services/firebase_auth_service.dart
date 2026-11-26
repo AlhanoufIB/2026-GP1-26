@@ -113,10 +113,12 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<bool> verifyOtp(String code) async {
-    // Interface only this phase: any 6-digit code is accepted
-    // once phone + password were correct.
-    final ok = _passedPassword && _auth.currentUser != null;
-    _passedPassword = false;
+    // Interface only this phase: the default code 123456 (shown as a note
+    // on the OTP screen) is accepted once phone + password were correct.
+    final ok = _passedPassword &&
+        _auth.currentUser != null &&
+        code == MockAuthService.testCode;
+    if (ok) _passedPassword = false; // a wrong code can be retried
     return ok;
   }
 

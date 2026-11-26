@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_colors.dart';
+import '../../../widgets/back_link.dart';
 
 /// Path of the logo image. To use a logo of your own, change this one line.
 const String _logoAsset = 'assets/images/logo.png';
@@ -91,31 +92,11 @@ class AuthTopBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // In a right-to-left app the FIRST child sits on the right.
-        InkWell(
-          onTap: () => Navigator.of(context).maybePop(),
-          borderRadius: BorderRadius.circular(8),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.arrow_forward, size: 15, color: AppColors.brownDark),
-                SizedBox(width: 4),
-                Text(
-                  'رجوع',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.brownDark,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        // shared "رجوع" link (same as the other pages, arrow on the right)
+        const BackLink(text: 'رجوع'),
         const Spacer(),
         const AppLogo(size: 60, blendColor: AppColors.background),
       ],
     );
   }
-}
+}
