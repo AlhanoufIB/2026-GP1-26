@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import '../../models/property_myProperty.dart';
 import '../../services/property_service.dart';
+import '../../services/reverse_geocode_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/back_link.dart';
@@ -75,6 +76,20 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   final _locationFocus = FocusNode();
   List<String> _districts = []; // Riyadh districts from the heat map data
   bool _submitted = false;
+
+  // ── الشارع يُعبّأ تلقائياً من موقع الدبوس (OpenStreetMap) ──
+  bool _lookingUp = false; // جارٍ جلب اسم الشارع
+  PinAddress? _pinAddress; // آخر نتيجة للدبوس الحالي
+  bool _lookupFailed = false; // تعذّر الاتصال بالخدمة
+
+  /// رسالة خطأ إذا كان الدبوس خارج الحي المختار، وإلا null
+  String? get _locationError {
+    if (_pinAddress == null || _district == null) return null;
+    final inside = ReverseGeocodeService.isInDistrict(_pinAddress!, _district!);
+    return inside == false
+        ? 'الموقع المحدد خارج حي $_district، حدّد موقعاً داخل الحي'
+        : null;
+  }
 
   bool get _isEdit => widget.property != null;
 
@@ -183,7 +198,25 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       context,
       MaterialPageRoute(builder: (_) => LocationPickerScreen(initial: _latLng)),
     );
-    if (result != null) setState(() => _latLng = result);
+    if (result == null) return;
+    setState(() => _latLng = result);
+    await _resolvePin(result);
+  }
+
+  /// يجلب اسم الشارع (والحي) للدبوس ويعبّئ حقل الشارع تلقائياً
+  Future<void> _resolvePin(LatLng point) async {
+    setState(() {
+      _lookingUp = true;
+      _lookupFailed = false;
+    });
+    final res = await ReverseGeocodeService.instance.lookup(point);
+    if (!mounted || _latLng != point) return; // تغيّر الدبوس أثناء الانتظار
+    setState(() {
+      _lookingUp = false;
+      _pinAddress = res;
+      _lookupFailed = res == null;
+      _address.text = res?.street ?? '';
+    });
   }
 
   Future<void> _submit() async {
@@ -203,7 +236,11 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     check('المساحة', _vArea(_area.text) != null, _areaFocus);
     check('نوع العقار', _type == null);
     check('الحي', _vDistrict(_district) != null);
-    check('الموقع على الخريطة', _latLng == null);
+    check('الموقع على الخريطة', _latLng == null || _locationError != null);
+    if (_lookingUp) {
+      _showMessage('جارٍ التحقق من الموقع، انتظر لحظة');
+      return;
+    }
     check('الإيجار', _vPrice(_price.text) != null, _priceFocus);
 
     if (problems.isNotEmpty) {
@@ -359,18 +396,37 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                         validator: _vDistrict,
                       ),
 
-                      // 6) الشارع
+                      // 6) الشارع — يُعبّأ تلقائياً من الدبوس ولا يُكتب يدوياً،
+                      //    حتى يطابق الموقع الفعلي دائماً
                       const FormFieldLabel('الشارع'),
-                      AppTextField(
+                      TextFormField(
                         controller: _address,
-                        hint: 'الشارع و اقرب معلم',
+                        readOnly: true,
+                        enableInteractiveSelection: false,
+                        onTap: _pickLocation,
+                        decoration: appInputDecoration(
+                          _lookingUp
+                              ? 'جارٍ تحديد الشارع...'
+                              : _latLng == null
+                                  ? 'يُحدَّد تلقائياً بعد اختيار الموقع على الخريطة'
+                                  : 'لم يُعثر على اسم شارع لهذا الموقع',
+                        ),
                       ),
+                      if (_lookupFailed)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 4),
+                          child: Text(
+                            'تعذّر جلب اسم الشارع، تأكد من الإنترنت ثم أعد تحديد الموقع',
+                            style: TextStyle(
+                                fontSize: 11, color: AppColors.textMuted),
+                          ),
+                        ),
 
                       // 7) الموقع على الخريطة
                       const SizedBox(height: 12),
                       DashedBox(
                         onTap: _pickLocation,
-                        hasError: mapError,
+                        hasError: mapError || _locationError != null,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -399,6 +455,8 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                       ),
                       if (mapError)
                         const FieldErrorText('الموقع على الخريطة مطلوب'),
+                      if (_locationError != null)
+                        FieldErrorText(_locationError!),
 
                       // 8) الإيجار + سعر مقترح
                       const FormFieldLabel('الإيجار السنوي (ر.س)',
@@ -513,4 +571,4 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       ),
     );
   }
-}
+}
