@@ -19,14 +19,17 @@ abstract class RecommendationService {
       BusinessRequirement requirement);
 }
 
-/// TEMPORARY placeholder scoring. This is NOT the AI model.
+/// TEMPORARY rule-based scoring for Release 1 (NOT the AI model).
 ///
-/// property_match_score (0-100):
-///   budget  up to 50 (full if rent <= budget, less the more it's over)
-///   space   up to 30 (full if area >= required, less if smaller)
-///   type    20       (same property type 10 + same activity 10)
-/// location_score (0-100):
-///   100 in the preferred district, 40 elsewhere, 60 if none was chosen.
+/// Weights come from questionnaire Q11 (see Recommendation):
+///   location 34 + budget 34 + space 19 + parking 13 = 100
+/// Each factor gives a fraction (0-1) of its weight:
+///   location: 1 in the preferred district (or no preference), else 0
+///   budget:   1 if rent <= budget, else budget / rent
+///   space:    1 if area >= required, else area / required
+///   parking:  1 if the property has parking, else 0
+/// Property type and activity are the user's explicit choices, so
+/// matching properties are listed first, then sorted by the score.
 class RuleBasedRecommendationService implements RecommendationService {
   static const int maxResults = 3; // ER diagram: 0..3 per requirement
 
@@ -36,8 +39,20 @@ class RuleBasedRecommendationService implements RecommendationService {
     final properties =
         await PropertyRepository.instance.getAvailableProperties();
 
+    // how well type/activity match: 2 = both, 1 = type only, 0 = none
+    int typeLevel(Property p) =>
+        (p.propertyType == requirement.propertyType ? 1 : 0) +
+        (p.propertyType == requirement.propertyType &&
+                p.activityType == requirement.businessType
+            ? 1
+            : 0);
+
     final scored = properties.map((p) => _score(requirement, p)).toList()
-      ..sort((a, b) => b.overallScore.compareTo(a.overallScore));
+      ..sort((a, b) {
+        final byType = typeLevel(b.property) - typeLevel(a.property);
+        if (byType != 0) return byType; // matching types first
+        return b.overallScore.compareTo(a.overallScore); // then by score
+      });
 
     final top = scored.take(maxResults).toList();
     return [
@@ -52,7 +67,7 @@ class RuleBasedRecommendationService implements RecommendationService {
           tags: top[i].tags,
           budgetPoints: top[i].budgetPoints,
           spacePoints: top[i].spacePoints,
-          typePoints: top[i].typePoints,
+          parkingPoints: top[i].parkingPoints,
           rank: i + 1,
         ),
     ];
@@ -62,70 +77,77 @@ class RuleBasedRecommendationService implements RecommendationService {
     final reasons = <String>[];
     final tags = <String>[];
 
-    // --- budget: up to 50 points ---
-    double budgetPoints;
-    if (p.rentPrice <= req.budget) {
-      budgetPoints = 50;
-      reasons.add('ضمن ميزانيتك');
-      tags.add('ضمن الميزانية');
-    } else {
-      final overBy = (p.rentPrice - req.budget) / req.budget; // 0.2 = 20%
-      budgetPoints = (50 * (1 - overBy * 2)).clamp(0, 50).toDouble();
-      reasons.add('السعر أعلى من ميزانيتك');
-    }
-
-    // --- space: up to 30 points ---
-    double spacePoints;
-    if (p.areaSqm >= req.requiredSpace) {
-      spacePoints = 30;
-      tags.add('مساحة مناسبة');
-    } else {
-      spacePoints = 30 * (p.areaSqm / req.requiredSpace);
-      reasons.add('مساحة أصغر من المطلوب');
-    }
-
-    // --- property type + activity: up to 20 points ---
-    // exact match: both forms pick from the same lists
-    double typePoints = 0;
-    if (p.propertyType == req.propertyType) {
-      typePoints += 10;
-      tags.add('نوع العقار المطلوب');
-    } else {
-      reasons.add('نوع العقار مختلف عن المطلوب');
-    }
-    if (p.activityType == req.businessType) {
-      typePoints += 10;
-      reasons.add('مناسب لنشاطك');
-      tags.add('مناسب لنشاطك');
-    }
-
-    // --- location: separate 0-100 score ---
-    double locationScore;
+    // --- location (0-1) ---
     final preferred = req.preferredLocation?.trim();
+    double location;
     if (preferred == null || preferred.isEmpty) {
-      locationScore = 60; // neutral: the user did not choose a district
+      location = 1; // no preference -> no requirement missed
     } else if (p.district.contains(preferred) ||
         preferred.contains(p.district)) {
-      locationScore = 100;
+      location = 1;
       reasons.add('في موقعك المفضّل');
       tags.add('الموقع المفضّل');
     } else {
-      locationScore = 40;
+      location = 0;
+      reasons.add('خارج الحي المفضّل');
     }
 
-    if (p.hasParking == true) tags.add('مواقف');
+    // --- budget (0-1) ---
+    double budget;
+    if (p.rentPrice <= req.budget) {
+      budget = 1;
+      reasons.add('ضمن ميزانيتك');
+      tags.add('ضمن الميزانية');
+    } else {
+      budget = req.budget / p.rentPrice; // e.g. 20% over -> 0.83
+      reasons.add('السعر أعلى من ميزانيتك');
+    }
+
+    // --- space (0-1) ---
+    double space;
+    if (p.areaSqm >= req.requiredSpace) {
+      space = 1;
+      tags.add('مساحة مناسبة');
+    } else {
+      space = p.areaSqm / req.requiredSpace;
+      reasons.add('مساحة أصغر من المطلوب');
+    }
+
+    // --- parking (0-1) ---
+    final parking = p.hasParking == true ? 1.0 : 0.0;
+    if (parking == 1) tags.add('مواقف');
+
+    // --- type & activity: not weighted, used for ordering + tags ---
+    if (p.propertyType == req.propertyType) {
+      tags.add('نوع العقار المطلوب');
+      if (p.activityType == req.businessType) {
+        reasons.add('مناسب لنشاطك');
+        tags.add('مناسب لنشاطك');
+      }
+    } else {
+      reasons.add('نوع العقار مختلف عن المطلوب');
+    }
+
+    final budgetPoints = budget * Recommendation.budgetWeight;
+    final spacePoints = space * Recommendation.spaceWeight;
+    final parkingPoints = parking * Recommendation.parkingWeight;
+    const matchWeight = Recommendation.budgetWeight +
+        Recommendation.spaceWeight +
+        Recommendation.parkingWeight; // 66
 
     return Recommendation(
       recommendationId: '', // set after sorting
       requirementId: req.requirementId,
       property: p,
-      locationScore: locationScore,
-      propertyMatchScore: budgetPoints + spacePoints + typePoints,
+      locationScore: location * 100,
+      // stored as 0-100 so it fits the RECOMMENDATION table
+      propertyMatchScore:
+          (budgetPoints + spacePoints + parkingPoints) / matchWeight * 100,
       explanation: 'السبب: ${reasons.join('، ')}.',
       tags: tags,
       budgetPoints: budgetPoints,
       spacePoints: spacePoints,
-      typePoints: typePoints,
+      parkingPoints: parkingPoints,
       rank: 0, // set after sorting
     );
   }

@@ -460,32 +460,31 @@ void _showScoreDetails(BuildContext context, Recommendation r) {
               color: AppColors.brownDark,
             ),
           ),
-          const SizedBox(height: 4),
+                    const SizedBox(height: 4),
           const Text(
-            'متوسط درجة الموقع ودرجة ملاءمة العقار',
+            'النسبة هي مجموع العوامل التالية، وكل عامل له وزن حسب أهميته.',
             style: TextStyle(fontSize: 13, color: AppColors.hint),
           ),
           const SizedBox(height: 20),
-          _ScoreRow(label: 'الموقع', value: r.locationScore, max: 100, main: true),
           _ScoreRow(
-            label: 'ملاءمة العقار',
-            value: r.propertyMatchScore,
-            max: 100,
-            main: true,
+            label: 'الموقع',
+            value: r.locationPoints,
+            max: Recommendation.locationWeight,
           ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 16),
-            child: Column(
-              children: [
-                _ScoreRow(label: 'الميزانية', value: r.budgetPoints, max: 50),
-                _ScoreRow(label: 'المساحة', value: r.spacePoints, max: 30),
-                _ScoreRow(
-                  label: 'نوع العقار والنشاط',
-                  value: r.typePoints,
-                  max: 20,
-                ),
-              ],
-            ),
+          _ScoreRow(
+            label: 'الميزانية',
+            value: r.budgetPoints,
+            max: Recommendation.budgetWeight,
+          ),
+          _ScoreRow(
+            label: 'المساحة',
+            value: r.spacePoints,
+            max: Recommendation.spaceWeight,
+          ),
+          _ScoreRow(
+            label: 'المواقف',
+            value: r.parkingPoints,
+            max: Recommendation.parkingWeight,
           ),
         ],
       ),

@@ -39,7 +39,7 @@ void main() {
       final results = await service.getRecommendations(cafeInMalqa);
       final best = results.first;
       expect(best.property.district, 'الملقا');
-      expect(best.overallScore, 100);
+      expect(best.overallScore, 87); // location 34 + budget 34 + space 19, no parking
       expect(best.tags, contains('ضمن الميزانية'));
       expect(best.explanation, contains('في موقعك المفضّل'));
     },
