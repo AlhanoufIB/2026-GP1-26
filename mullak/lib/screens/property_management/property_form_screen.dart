@@ -29,6 +29,14 @@ const Map<String, List<String>> kActivityByType = {
   'أرض تجارية': ['بناء مشروع تجاري', 'موقف سيارات'],
 };
 final List<String> kPropertyTypes = kActivityByType.keys.toList();
+/// Districts covered by the rental data (Suhail dataset).
+const kScopeDistricts = ['النرجس', 'قرطبة', 'ظهرة لبن'];
+
+/// True if the typed district is one of the 3 (accepts "حي النرجس" too).
+bool isScopeDistrict(String text) {
+  final d = text.trim().replaceFirst(RegExp(r'^حي\s+'), '');
+  return kScopeDistricts.contains(d);
+}
 
 class PropertyFormScreen extends StatefulWidget {
   /// null = إضافة عقار جديد، غير null = تعديل
@@ -168,6 +176,17 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     final area = int.tryParse(_area.text.trim());
     if (_type == null || area == null || area <= 0) {
       _showMessage('أدخل نوع العقار والمساحة أولاً لنقترح لك سعراً');
+      return;
+    }
+
+    final district = _district;
+    if (district == null) {
+      _showMessage('اختر الحي أولاً لنقترح لك سعراً');
+      return;
+    }
+    if (!isScopeDistrict(district)) {
+      _showMessage(
+          'السعر المقترح متاح حالياً فقط لأحياء: ${kScopeDistricts.join('، ')}');
       return;
     }
 
@@ -505,6 +524,23 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                         ],
                       ),
 
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline,
+                              size: 14, color: AppColors.textMuted),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'السعر المقترح متاح حالياً لأحياء: ${kScopeDistricts.join('، ')}',
+                              style: const TextStyle(
+                                  fontSize: 11, color: AppColors.textMuted),
+                            ),
+                          ),
+                        ],
+                      ),
+
+
                       // 9) الوصف
                       const FormFieldLabel('الوصف'),
                       AppTextField(
@@ -571,4 +607,4 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       ),
     );
   }
-}
+}
