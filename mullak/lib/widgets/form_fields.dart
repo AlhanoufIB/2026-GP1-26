@@ -204,3 +204,148 @@ class _DashedPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DashedPainter old) => old.color != color;
 }
+
+
+/// حقل اختيار من قائمة طويلة مع بحث (مثل قائمة الأحياء).
+/// يشبه AppDropdownField في الشكل، ويدعم الـ validator داخل Form.
+class AppSearchPickerField extends FormField<String> {
+  AppSearchPickerField({
+    super.key,
+    required String? value,
+    required String hint,
+    required String sheetTitle,
+    required List<String> items,
+    required ValueChanged<String> onChanged,
+    super.validator,
+  }) : super(
+          initialValue: value,
+          builder: (state) {
+            return InkWell(
+              borderRadius: BorderRadius.circular(kFieldRadius),
+              onTap: () async {
+                final picked = await showModalBottomSheet<String>(
+                  context: state.context,
+                  isScrollControlled: true,
+                  backgroundColor: AppColors.background,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  builder: (_) => _SearchPickerSheet(
+                      title: sheetTitle, items: items, selected: state.value),
+                );
+                if (picked != null) {
+                  state.didChange(picked);
+                  onChanged(picked);
+                }
+              },
+              child: InputDecorator(
+                isEmpty: state.value == null,
+                decoration: appInputDecoration(hint).copyWith(
+                  errorText: state.errorText,
+                  suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded,
+                      color: AppColors.textMuted),
+                ),
+                child: Text(
+                  state.value ?? '',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 14, color: AppColors.textDark),
+                ),
+              ),
+            );
+          },
+        );
+}
+
+String _normalizeAr(String s) => s
+    .replaceAll(RegExp('[أإآ]'), 'ا')
+    .replaceAll('ة', 'ه')
+    .replaceAll('ى', 'ي')
+    .trim();
+
+class _SearchPickerSheet extends StatefulWidget {
+  final String title;
+  final List<String> items;
+  final String? selected;
+  const _SearchPickerSheet(
+      {required this.title, required this.items, required this.selected});
+
+  @override
+  State<_SearchPickerSheet> createState() => _SearchPickerSheetState();
+}
+
+class _SearchPickerSheetState extends State<_SearchPickerSheet> {
+  String _q = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _normalizeAr(_q);
+    final list = widget.items
+        .where((e) => q.isEmpty || _normalizeAr(e).contains(q))
+        .toList();
+    final height = MediaQuery.of(context).size.height * 0.8;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SizedBox(
+        height: height,
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(widget.title,
+                    style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textDark)),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextField(
+                autofocus: false,
+                onChanged: (v) => setState(() => _q = v),
+                decoration: appInputDecoration('ابحث...').copyWith(
+                  prefixIcon:
+                      const Icon(Icons.search, color: AppColors.textMuted),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: list.isEmpty
+                  ? const Center(
+                      child: Text('لا توجد نتائج',
+                          style: TextStyle(color: AppColors.textMuted)))
+                  : ListView.builder(
+                      itemCount: list.length,
+                      itemBuilder: (_, i) {
+                        final item = list[i];
+                        final isSel = item == widget.selected;
+                        return ListTile(
+                          title: Text(item,
+                              style: TextStyle(
+                                  fontWeight:
+                                      isSel ? FontWeight.w800 : FontWeight.w500,
+                                  color: AppColors.textDark)),
+                          trailing: isSel
+                              ? const Icon(Icons.check, color: AppColors.primary)
+                              : null,
+                          onTap: () => Navigator.pop(context, item),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

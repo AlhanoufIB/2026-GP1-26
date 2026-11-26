@@ -13,6 +13,7 @@ import '../../widgets/image_picker_section.dart';
 import 'location_picker_screen.dart';
 import 'suggested_price_screen.dart';
 import '../map/heatmap_data.dart' show loadDatasetPoints;
+import '../../data/riyadh_districts.dart'; // قائمة أحياء الرياض الثابتة
 
 /// قوائم مشتقة من QI_Neighborhood_Data.xlsx:
 ///  أنواع العقار ← Rental Commercial + Parcel Types
@@ -42,6 +43,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
 
   String? _type;
   String? _activity;
+  String? _district; // يُختار من قائمة أحياء الرياض الثابتة
 
   // لو العقار القديم نوعه/نشاطه مو في القائمة نضيفه عشان ما يختفي
   List<String> get _typeOptions => [
@@ -54,10 +56,8 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
             !(kActivityByType[_type] ?? const <String>[]).contains(_activity))
           _activity!,
       ];
-
   late final TextEditingController _title;
   late final TextEditingController _area;
-  late final TextEditingController _district;
   late final TextEditingController _address;
   late final TextEditingController _price;
   late final TextEditingController _description;
@@ -84,9 +84,10 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     final p = widget.property;
     _type = (p?.propertyType.isEmpty ?? true) ? null : p!.propertyType;
     _activity = (p?.activityType?.isEmpty ?? true) ? null : p!.activityType;
+    _district =
+        (p?.district.trim().isEmpty ?? true) ? null : p!.district.trim();
     _title = TextEditingController(text: p?.title ?? '');
     _area = TextEditingController(text: p?.areaSqm.round().toString() ?? '');
-    _district = TextEditingController(text: p?.district ?? '');
     _address = TextEditingController(text: p?.address ?? '');
     _price = TextEditingController(text: p?.rentPrice.round().toString() ?? '');
     _description = TextEditingController(text: p?.description ?? '');
@@ -100,7 +101,6 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   void dispose() {
     _title.dispose();
     _area.dispose();
-    _district.dispose();
     _address.dispose();
     _price.dispose();
     _description.dispose();
@@ -133,11 +133,10 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     return null;
   }
 
+  // الحي لازم يكون مختار ومن قائمة أحياء الرياض المسموحة فقط
   String? _vDistrict(String? v) {
-    final t = (v ?? '').trim();
-    if (t.isEmpty) return 'الحي مطلوب';
-    if (t.length < 2) return 'اسم الحي قصير جداً';
-    if (RegExp(r'^[0-9\s]+$').hasMatch(t)) return 'اسم الحي لا يمكن أن يكون أرقاماً فقط';
+    if (v == null || v.trim().isEmpty) return 'الحي مطلوب';
+    if (!kRiyadhDistricts.contains(v.trim())) return 'اختر الحي من القائمة';
     return null;
   }
 
@@ -163,7 +162,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
         builder: (_) => SuggestedPriceScreen(
           type: _type!,
           area: area,
-          district: _district.text.trim(),
+          district: _district ?? '',
         ),
       ),
     );
@@ -203,7 +202,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     check('العنوان', _vTitle(_title.text) != null, _titleFocus);
     check('المساحة', _vArea(_area.text) != null, _areaFocus);
     check('نوع العقار', _type == null);
-    check('الحي', _vDistrict(_district.text) != null, _districtFocus);
+    check('الحي', _vDistrict(_district) != null);
     check('الموقع على الخريطة', _latLng == null);
     check('الإيجار', _vPrice(_price.text) != null, _priceFocus);
 
@@ -225,7 +224,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
         propertyType: _type!,
         activityType: _activity,
         areaSqm: area.toDouble(),
-        district: _district.text.trim(),
+        district: _district!,
         city: old?.city ?? kDefaultCity,
         rentPrice: price.toDouble(),
         status: old?.status ?? 'available',
@@ -349,12 +348,14 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                         ],
                       ),
 
-                      // 5) الحي
+                      // 5) الحي (قائمة ثابتة لأحياء الرياض)
                       const FormFieldLabel('الحي', required: true),
-                      AppTextField(
-                        controller: _district,
-                        hint: 'مثال: العليا',
-                        focusNode: _districtFocus,
+                      AppSearchPickerField(
+                        value: _district,
+                        hint: 'اختر الحي',
+                        sheetTitle: 'اختر الحي',
+                        items: kRiyadhDistricts,
+                        onChanged: (v) => setState(() => _district = v),
                         validator: _vDistrict,
                       ),
 
